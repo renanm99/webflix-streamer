@@ -12,10 +12,10 @@ export default function Header({ onSearch }: { onSearch: (query: string) => void
     return (
         <header className="bg-black shadow-md sticky top-0 z-10">
             <div className="container mx-auto py-6">
-                <div className="flex flex-col md:flex-row items-center justify-between h-full">
+                <div className="flex flex-col md:flex-row items-center justify-between h-full md:px-10">
                     <div className="flex items-center">
                         <Link href="/" className="text-xl font-bold text-white">
-                            MovieStreamer
+                            Webflix
                         </Link>
                     </div>
 
