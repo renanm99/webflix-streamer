@@ -1,35 +1,29 @@
 'use client'
 import React from 'react';
 import { useEffect, useRef, useState } from 'react'
-import { repo } from '@/../repo/db'
+//import { repo } from '../../../repo/db'
 
 interface PlayerProps {
-  id: number;
-  seasonId: number | null | undefined;
-  episodeId: number | null | undefined;
+  magnetTorrent: string;
 }
 
-const Player: React.FC<PlayerProps> = ({ id, seasonId, episodeId }) => {
+const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   const [streamUrl, setStreamUrl] = useState('/api/stream/undefined')
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedSeason, setSelectedSeason] = useState(seasonId)
-  const [selectedEpisode, setSelectedEpisode] = useState(episodeId)
+  const [selectedMagnet, setselectedMagnet] = useState<string>(magnetTorrent)
 
   const videoRef = useRef<HTMLVideoElement>(null)
 
   useEffect(() => {
-    setSelectedSeason(seasonId);
-    setSelectedEpisode(episodeId);
-  }, [episodeId, seasonId]);
+    setselectedMagnet(magnetTorrent)
+  }, [magnetTorrent]);
 
   useEffect(() => {
-    const url = selectedEpisode
-      ? repo.movies.find((result) => result.id == id)?.seasons?.find((season) => season.seasonId == selectedSeason)?.episodes?.find((episode) => episode.episodeId == selectedEpisode)?.magnet_torrent
-      : repo.movies.find((result) => result.id == id)?.magnet_torrent;
+    const url = selectedMagnet
 
     setStreamUrl('/api/stream/' + (url || 'undefined'));
     setIsLoading(url !== undefined && url !== null && url !== '');
-  }, [id, selectedEpisode, selectedSeason]);
+  }, [selectedMagnet]);
 
   useEffect(() => {
     const video = videoRef.current

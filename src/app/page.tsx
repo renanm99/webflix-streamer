@@ -1,35 +1,42 @@
 'use client'
-
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 
 import Poster from './components/poster'
 import Header from './components/header'
-import { repo } from '../../repo/db'
+import Loading from './components/loading'
+//import { repo } from '../../repo/db'
+import { GetAllMovies } from "@/../repo/dbHandler";
+import { Movie } from "@/../repo/models/movie";
 
 export default function Home() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [mongoMovies, setMongoMovies] = useState<Movie[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Filter movies based on search query
-  const filteredMovies = repo.movies.filter(movie => {
-    if ((movie.magnet_torrent != undefined && movie.magnet_torrent != null && movie.magnet_torrent != '') || (movie.content_type == 'tv' && movie.seasons.length > 0)) {
-      return movie.title.toLowerCase().includes(searchQuery.toLowerCase());
-    }
-  }).sort((a, b) => {
-    // Get release dates, using fallbacks if undefined
-    const dateA = a.content_type === 'tv' ? a.first_air_date : a.release_date;
-    const dateB = b.content_type === 'tv' ? b.first_air_date : b.release_date;
+  useEffect(() => {
+    const fetchMovies = async () => {
+      try {
+        const movies = await GetAllMovies();
+        setMongoMovies(movies);
+      } catch (error) {
+        console.error('Error fetching movies:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    // Default dates if undefined
-    const timeA = dateA ? new Date(dateA).getTime() : 0;
-    const timeB = dateB ? new Date(dateB).getTime() : 0;
-
-    return timeB - timeA; // Sort descending (newest first)
-  });
+    fetchMovies();
+  }, []);
 
   // Handle search input changes
   const handleSearch = (query: string) => {
     setSearchQuery(query);
   };
+
+  // Filter movies based on search query
+  const filteredMovies = mongoMovies.filter(movie =>
+    movie.title.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <>
@@ -40,23 +47,32 @@ export default function Home() {
             Showing results for &quot;{searchQuery}&quot;
           </p>
         )}
-        <div className="flex flex-wrap justify-center gap-10 w-full">
-          {filteredMovies.map((result) => (
-            <Poster
-              key={result.id}
-              id={result.id}
-              title={result.title}
-              imageUrl={result.poster_path}
-              year={result.release_date ? result.release_date : result.first_air_date}
-            />
-          ))}
-        </div>
-        {filteredMovies.length === 0 && (
+
+        {isLoading ? (
+          <Loading />
+        ) : filteredMovies.length > 0 ? (
+          <div className="flex flex-wrap justify-center gap-10 w-full">
+            {filteredMovies.map((result) => (
+              <Poster
+                key={result.id}
+                id={result.id}
+                title={result.title}
+                imageUrl={result.poster_path}
+                year={result.release_date ? result.release_date : result.first_air_date}
+              />
+            ))}
+          </div>
+        ) : (
           <div className="text-center py-12">
-            <p className="text-xl text-gray-400">No movies found matching &quot;{searchQuery}&quot;</p>
+            <p className="text-xl text-gray-400">
+              {searchQuery
+                ? `No movies found matching "${searchQuery}"`
+                :
+                `Well... This is awkward. We couldn't find any movies.&apos;But don't worry, we're working on it!`
+              }
+            </p>
           </div>
         )}
-
       </main>
     </>
   )

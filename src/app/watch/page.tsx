@@ -2,38 +2,110 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import Player from '../components/player'
-import { repo } from '@/../repo/db'
+//import { repo } from '../../../repo/db'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
+
+import { GetWatchMovie } from "@/../repo/dbHandler";
+import { Movie } from "@/../repo/models/movie";
 
 // Componente separado que usa useSearchParams
 function WatchPageContent() {
     const searchParams = useSearchParams()
     const router = useRouter()
 
-    const id = parseInt(searchParams?.get('id') || '', 10)
-    const content = repo.movies.find(movie => movie.id === id)
+    const [content, setContent] = useState<Movie>({} as Movie);
+    const [isLoading, setIsLoading] = useState(true);
+    const [contentEpisodes, setContentEpisodes] = useState<any[] | null>(null);
+    const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+    const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
+    const [magnetTorrentSelected, setmagnetTorrentSelected] = useState<string>('');
 
-    //seasons
-    const hasSeasons = content?.content_type === 'tv' && content?.seasons?.length > 0;
-    const seasons = hasSeasons ? content?.seasons : null;
-    const [selectedSeason, setSelectedSeason] = useState(hasSeasons ? seasons?.findLast(season => season?.episodes?.length > 0)?.seasonId : null);
-
-    const [contentEpisodes, setcontentEpisodes] = useState(seasons ? seasons?.findLast(season => season?.episodes?.length > 0)?.episodes : null);
-    const [selectedEpisode, setSelectedEpisode] = useState(seasons ? seasons?.findLast(season => season?.episodes?.length > 0)?.episodes?.findLast(episode => episode?.magnet_torrent != undefined && episode?.magnet_torrent != null && episode?.magnet_torrent != '')?.episodeId : null);
-
-
+    // Fetch the movie/show data
     useEffect(() => {
-        let episodes = hasSeasons ? content?.seasons?.find(season => season.seasonId === selectedSeason)?.episodes : null;
-        if (episodes && episodes.length > 0) {
-            setcontentEpisodes(episodes)
-            setSelectedEpisode(episodes?.findLast(episode => episode?.magnet_torrent != undefined && episode?.magnet_torrent != null && episode?.magnet_torrent != '')?.episodeId)
-        } else {
-            setSelectedEpisode(null)
-        }
-    }, [selectedSeason, hasSeasons, content])
+        const fetchMovies = async () => {
+            try {
+                const id = parseInt(searchParams?.get('id') || '', 10)
+                const movie = await GetWatchMovie(id);
+                setContent(movie);
+            } catch (error) {
+                console.error('Error fetching content:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-    if (!content) {
+        fetchMovies();
+    }, [searchParams]); // Only re-run if searchParams changes
+
+    // Initialize seasons and episodes when content changes
+    useEffect(() => {
+        if (!content) return;
+
+        const hasSeasons = content?.content_type === 'tv';
+
+        if (hasSeasons && content.seasons) {
+            // Find the last season with episodes
+            const lastSeasonWithEpisodes = content.seasons.findLast(season =>
+                season?.episodes && season.episodes.length > 0
+            );
+
+            if (lastSeasonWithEpisodes) {
+                setSelectedSeason(lastSeasonWithEpisodes.seasonId);
+
+                // Find episodes for this season
+                const episodes = lastSeasonWithEpisodes.episodes;
+                if (episodes && episodes.length > 0) {
+                    setContentEpisodes(episodes);
+
+                    // Find the last episode with a magnet link
+                    const lastEpisodeWithMagnet = episodes.findLast(episode =>
+                        episode?.magnet_torrent != undefined &&
+                        episode?.magnet_torrent != null &&
+                        episode?.magnet_torrent != ''
+                    );
+
+                    if (lastEpisodeWithMagnet) {
+                        setSelectedEpisode(lastEpisodeWithMagnet.episodeId);
+                    }
+                }
+            }
+        } else {
+            setmagnetTorrentSelected(content.magnet_torrent || '');
+        }
+    }, [content]); // Only re-run if content changes
+
+    // Update episodes when selected season changes
+    useEffect(() => {
+        if (!content || !content.seasons || selectedSeason === null) return;
+
+        const selectedSeasonData = content.seasons.find(season =>
+            season.seasonId === selectedSeason
+        );
+
+        if (selectedSeasonData && selectedSeasonData.episodes && selectedSeasonData.episodes.length > 0) {
+            setContentEpisodes(selectedSeasonData.episodes);
+
+            if (selectedEpisode === null) {
+                setSelectedEpisode(selectedSeasonData.episodes.findLast(episode => episode)?.episodeId || null);
+            }
+
+            setSelectedEpisode(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.episodeId || null);
+            setmagnetTorrentSelected(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.magnet_torrent || '');
+        } else {
+            setContentEpisodes(null);
+            setSelectedEpisode(null);
+        }
+    }, [selectedSeason, selectedEpisode, content, contentEpisodes]);
+
+    const hasSeasons = content?.content_type === 'tv';
+    const seasons = hasSeasons ? content.seasons : null;
+
+    if (isLoading) {
+        return <div className="container mx-auto px-4 py-16">Loading content...</div>
+    }
+
+    if (!content || !content.id) {
         return <div className="container mx-auto px-4 py-16">Content not found</div>
     }
 
@@ -64,7 +136,7 @@ function WatchPageContent() {
             </div>
 
             <div className="mb-10 w-full h-full">
-                <Player id={id} seasonId={selectedEpisode ? selectedSeason : null} episodeId={selectedEpisode} />
+                <Player magnetTorrent={magnetTorrentSelected} />
             </div>
 
             {/* Season selection - only shown for TV shows with seasons */}
@@ -117,35 +189,6 @@ function WatchPageContent() {
                     <p className="text-lg text-gray-400">No episodes available</p>
                 </div>
             )}
-
-            {/* Seção "Mais como este" */}
-            <div>
-                <h2 className="text-2xl font-semibold mb-4">More Like This</h2>
-                <div className="flex flex-wrap justify-center gap-14">
-                    {repo.movies
-                        .filter(movie => {
-                            if ((movie.magnet_torrent != undefined && movie.magnet_torrent != null && movie.magnet_torrent != '') || (movie.content_type == 'tv' && movie.seasons?.length > 0) && movie.id !== id && (movie.original_title?.toLowerCase().split(' ').some(title => content.original_title?.toLowerCase().includes(title)) || movie.genre_ids?.some(genre => content.genre_ids?.includes(genre)))) {
-                                return movie;
-                            }
-                            return false;
-                        })
-                        .slice(0, 4)
-                        .map(movie => (
-                            <div key={movie.id} className="w-full sm:w-1/2 md:w-1/3 lg:w-1/4 xl:w-1/5">
-                                <a href={`/watch?id=${movie.id}`} className="block">
-                                    <Image
-                                        src={`${process.env.NEXT_PUBLIC_URL_PATH}${movie.poster_path}`}
-                                        alt={movie.title}
-                                        width={500}
-                                        height={750}
-                                        className="w-full h-auto rounded-lg hover:opacity-75 transition-opacity"
-                                    />
-                                    <h3 className="mt-2 font-medium">{movie.title}</h3>
-                                </a>
-                            </div>
-                        ))}
-                </div>
-            </div>
         </main>
     )
 }
