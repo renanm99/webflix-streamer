@@ -27,7 +27,7 @@ A web-based streaming application built with Next.js that allows users to browse
 - Node.js (v16 or higher)
 - npm
 
-- ### Getting Node.js (v22.14) and npm (v10.9.2)
+### Getting Node.js (v22.14) and npm (v10.9.2)
 
 Windows -> Install Node.js (v22.14) and npm (v10.9.2):
    ```bash
