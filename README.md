@@ -27,9 +27,9 @@ A web-based streaming application built with Next.js that allows users to browse
 - Node.js (v16 or higher)
 - npm
 
-- ### Install Node.js (v22.14) and npm (v10.9.2)
+- ### Getting Node.js (v22.14) and npm (v10.9.2)
 
-1. Clone the repository:
+1. Install Node.js (v22.14) and npm (v10.9.2):
    ```bash
    # Download and install fnm:
    winget install Schniz.fnm
