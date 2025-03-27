@@ -29,10 +29,22 @@ A web-based streaming application built with Next.js that allows users to browse
 
 - ### Getting Node.js (v22.14) and npm (v10.9.2)
 
-1. Install Node.js (v22.14) and npm (v10.9.2):
+Windows -> Install Node.js (v22.14) and npm (v10.9.2):
    ```bash
    # Download and install fnm:
    winget install Schniz.fnm
+   # Download and install Node.js:
+   fnm install 22
+   # Verify the Node.js version:
+   node -v # Should print "v22.14.0".
+   # Verify npm version:
+   npm -v # Should print "10.9.2".
+   ```
+
+Linux -> Install Node.js (v22.14) and npm (v10.9.2):
+   ```bash
+   # Download and install fnm:
+   curl -o- https://fnm.vercel.app/install | bash
    # Download and install Node.js:
    fnm install 22
    # Verify the Node.js version:
