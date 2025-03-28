@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Background glow effect for better visibility -->
+  <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+    <feGaussianBlur stdDeviation="10" result="blur" />
+    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+  </filter>
+  
+  <!-- Construction barrier base -->
+  <g filter="url(#glow)">
+    <!-- Stand left -->
+    <path d="M120,390 L140,390 L150,180 L110,180 Z" fill="#8B4513" />
+    
+    <!-- Stand right -->
+    <path d="M370,390 L390,390 L400,180 L360,180 Z" fill="#8B4513" />
+    
+    <!-- Barrier sections -->
+    <g>
+      <!-- Main barrier -->
+      <path d="M90,180 L420,180 L410,130 L100,130 Z" fill="#FFFFFF" stroke="#333333" stroke-width="6" />
+      
+      <!-- Yellow and black striped pattern -->
+      <g clip-path="url(#barrierClip)">
+        <!-- Yellow background -->
+        <rect x="90" y="130" width="330" height="50" fill="#FFDD00" />
+        
+        <!-- Black stripes pattern -->
+        <path d="M70,200 L140,100" stroke="#000000" stroke-width="25" />
+        <path d="M120,200 L190,100" stroke="#000000" stroke-width="25" />
+        <path d="M170,200 L240,100" stroke="#000000" stroke-width="25" />
+        <path d="M220,200 L290,100" stroke="#000000" stroke-width="25" />
+        <path d="M270,200 L340,100" stroke="#000000" stroke-width="25" />
+        <path d="M320,200 L390,100" stroke="#000000" stroke-width="25" />
+        <path d="M370,200 L440,100" stroke="#000000" stroke-width="25" />
+      </g>
+      
+      <!-- Red top and bottom borders -->
+      <rect x="100" y="130" width="310" height="10" fill="#FF3B30" />
+      <rect x="90" y="170" width="330" height="10" fill="#FF3B30" />
+    </g>
+    
+    <!-- Floor shadow -->
+    <ellipse cx="255" cy="390" rx="200" ry="20" fill="#00000033" />
+  </g>
+  
+  <!-- Clip path for the barrier -->
+  <defs>
+    <clipPath id="barrierClip">
+      <path d="M100,140 L410,140 L400,170 L90,170 Z" />
+    </clipPath>
+  </defs>
+</svg>
