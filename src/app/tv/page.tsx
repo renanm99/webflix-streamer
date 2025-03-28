@@ -5,7 +5,7 @@ import Poster from '@/app/components/poster'
 import Header from '@/app/components/header'
 import Loading from '@/app/components/loading'
 import { GetTVPopular } from "@/../repo/tmdbApi";
-import { TV } from "@/../repo/models/tv";
+import { TV } from "@/../repo/models/movie";
 
 export default function MoviesPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -107,7 +107,7 @@ export default function MoviesPage() {
                                     id={result.id}
                                     title={result.name}
                                     imageUrl={result.poster_path}
-                                    year={result.release_date ? result.release_date : result.first_air_date}
+                                    year={result.first_air_date}
                                 />
                             </div>
                         ))}

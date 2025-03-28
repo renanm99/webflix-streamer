@@ -49,7 +49,7 @@ function WatchPageContent() {
                 <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
                     <div className="text-5xl mb-6">🎬</div>
                     <h2 className="text-2xl font-bold mb-4">Content Not Found</h2>
-                    <p className="text-gray-400 mb-6">We couldn't find what you're looking for.</p>
+                    <p className="text-gray-400 mb-6">We couldn&apos;t find what you&apos;re looking for.</p>
                     <button
                         onClick={() => router.back()}
                         className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-lg"
@@ -75,7 +75,7 @@ function WatchPageContent() {
                 {/* Content Header */}
                 <div className="mb-8">
                     <h1 className="text-4xl font-bold mb-4">{content.title}</h1>
-                    {content.tagline && <p className="italic text-blue-400 mb-4">"{content.tagline}"</p>}
+                    {content.tagline && <p className="italic text-blue-400 mb-4">&quot;{content.tagline}&quot;</p>}
 
                     <div className="relative w-full md:w-3/4 mb-6">
                         <Image
@@ -95,7 +95,7 @@ function WatchPageContent() {
                     <div className="flex flex-wrap gap-4 text-gray-400 text-sm">
                         <span>Release Date: <strong>{content.release_date}</strong></span>
                         <span>Status: <strong>{content.status}</strong></span>
-                        <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : "N/A"}</strong></span>
+                        <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span>
                         <span>Budget: <strong>${content.budget.toLocaleString()}</strong></span>
                         <span>Vote Average: <strong>{content.vote_average.toFixed(1)}</strong></span>
                         <span>Vote Count: <strong>{content.vote_count}</strong></span>
@@ -179,12 +179,12 @@ function WatchPageContent() {
                         </div>
                     </div>
                 )}
-
-                {/* Video Player */}
+                {/*"magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710"*/}
                 <div className="mb-10 w-full h-full">
                     <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
-                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black">
-                        <Player magnetTorrent={content.magnet_torrent || ''} />
+
+                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
+                        <Player magnetTorrent={content.magnet_torrent || "magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710"} />
                     </div>
                 </div>
 

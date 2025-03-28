@@ -60,19 +60,16 @@ export default function MoviesPage() {
       <Header onSearch={handleSearch} />
 
       <main className="container mx-auto px-4 py-8">
-        {/* Page Title */}
         <h1 className="text-3xl font-bold mb-6 text-center">
           {searchQuery ? 'Search Results' : 'Home'}
         </h1>
 
-        {/* Search Results Message */}
         {searchQuery && (
           <p className="text-center text-gray-400 mb-6">
             Showing results for &quot;{searchQuery}&quot;
           </p>
         )}
 
-        {/* Content Section */}
         {isLoading ? (
           <div className="flex justify-center items-center py-20">
             <Loading />
@@ -103,7 +100,6 @@ export default function MoviesPage() {
         )}
       </main>
 
-      {/* Footer */}
       <footer className="text-center py-6 text-gray-500 text-sm mt-12">
         <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
       </footer>

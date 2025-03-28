@@ -15,8 +15,8 @@ export async function GetAllMovies(): Promise<Movie[]> {
 
         return movies.sort((a, b) => {
             // Get release dates, using fallbacks if undefined
-            const dateA = a.content_type === 'tv' ? a.first_air_date : a.release_date;
-            const dateB = b.content_type === 'tv' ? b.first_air_date : b.release_date;
+            const dateA = a.release_date;
+            const dateB = b.release_date;
 
             // Default dates if undefined
             const timeA = dateA ? new Date(dateA).getTime() : 0;

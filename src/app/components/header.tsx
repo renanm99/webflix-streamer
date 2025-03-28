@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 export default function Header({ onSearch }: { onSearch: (query: string) => void }) {
@@ -15,6 +16,13 @@ export default function Header({ onSearch }: { onSearch: (query: string) => void
                 <div className="flex flex-col md:flex-row items-center justify-between h-full px-4 md:px-6">
                     <div className="flex items-center">
                         <Link href="/" className="text-2xl font-bold text-white flex items-center">
+                            <Image
+                                src="/ico512.png"
+                                alt="Logo"
+                                width={40}
+                                height={40}
+                                className="mr-2"
+                            />
                             <span className="text-blue-500 mr-1">Web</span>Flix
                         </Link>
                     </div>

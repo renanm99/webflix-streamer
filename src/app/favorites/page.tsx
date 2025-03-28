@@ -24,27 +24,16 @@ export default function FavoritesPage() {
 
 
                 <div className="flex flex-col items-center justify-center py-20">
-                    {/* 
-                    <div className="relative w-44 h-44 mb-8">
-                        <Image
-                            src="/construction.svg"
-                            alt="Under Construction"
-                            fill
-                            className="object-contain opacity-80"
-                            priority
-                        />
-                    </div>
-                    */}
                     <div className="text-8xl mb-8 text-blue-400">🚧</div>
 
                     <h2 className="text-2xl font-bold mb-4 text-blue-400">Coming Soon!</h2>
 
                     <div className="max-w-lg text-center">
                         <p className="text-xl text-gray-300 mb-6">
-                            We're building this feature to help you keep track of all your favorite movies and shows.
+                            We&apos;re building this feature to help you keep track of all your favorite movies and shows.
                         </p>
                         <p className="text-gray-400">
-                            Soon you'll be able to create and manage your personal watchlist. Stay tuned!
+                            Soon you&apos;ll be able to create and manage your personal watchlist. Stay tuned!
                         </p>
                     </div>
 
