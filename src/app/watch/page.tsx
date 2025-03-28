@@ -2,9 +2,9 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import Player from '../components/player'
+import Footer from '../components/footer'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-
 import { GetById } from "@/../repo/tmdbApi";
 import { MovieById } from "@/../repo/models/movie";
 
@@ -187,11 +187,7 @@ function WatchPageContent() {
                         <Player magnetTorrent={content.magnet_torrent || "magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710"} />
                     </div>
                 </div>
-
-                {/* Footer */}
-                <footer className="text-center py-6 text-gray-500 text-sm mt-12 border-t border-gray-800">
-                    <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
-                </footer>
+                <Footer />
             </main>
         </div>
     );

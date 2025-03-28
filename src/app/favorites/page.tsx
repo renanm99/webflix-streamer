@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import Header from '@/app/components/header'
+import Footer from '@/app/components/footer'
 import Image from 'next/image'
 
 export default function FavoritesPage() {
@@ -45,10 +46,8 @@ export default function FavoritesPage() {
                 </div>
             </main>
 
-            {/* Footer */}
-            <footer className="text-center py-6 text-gray-500 text-sm mt-12 border-t border-gray-800">
-                <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
-            </footer>
+
+            <Footer />
         </div>
     )
 }

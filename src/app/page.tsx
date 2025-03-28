@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react'
 import Poster from '@/app/components/poster'
 import Header from '@/app/components/header'
 import Loading from '@/app/components/loading'
+import Footer from '@/app/components/footer'
 import { GetAllMovies } from "@/../repo/dbHandler";
 import { Movie } from "@/../repo/models/movie";
 
@@ -100,9 +101,8 @@ export default function MoviesPage() {
         )}
       </main>
 
-      <footer className="text-center py-6 text-gray-500 text-sm mt-12">
-        <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
-      </footer>
+
+      <Footer />
     </div>
   )
 }

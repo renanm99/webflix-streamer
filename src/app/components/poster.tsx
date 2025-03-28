@@ -31,7 +31,7 @@ const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year }) => {
           <a href={'/watch?id=' + id}>
             <div className="relative">
               <Image
-                src={imageSrc}
+                src={imageUrl ? imageSrc : '/notfound.png'}
                 alt={title}
                 width={imageError ? 50 : 500}
                 height={imageError ? 50 : 750}
