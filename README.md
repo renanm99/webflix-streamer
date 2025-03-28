@@ -68,7 +68,7 @@ Linux -> Install Node.js (v22.14) and npm (v10.9.2):
 
 3. Create an `.env` file in the root directory with the following variables: (I'm using The Movie Database to retrive movie posters)
    ```
-   NEXT_PUBLIC_URL_PATH=https://image.tmdb.org/t/p/w500
+   NEXT_PUBLIC_TMDB_API_URL_IMAGE=https://image.tmdb.org/t/p/w500
    ```
 
 4. Start the development server:

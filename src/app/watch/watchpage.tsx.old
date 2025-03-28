@@ -1,0 +1,276 @@
+/*
+'use client'
+
+import { useEffect, useState, Suspense } from 'react'
+import Player from '../components/player'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Image from 'next/image'
+
+import { GetById } from "@/../repo/tmdbApi";
+import { MovieById } from "@/../repo/models/movie";
+
+// Componente separado que usa useSearchParams
+function WatchPageContent() {
+    const searchParams = useSearchParams()
+    const router = useRouter()
+
+    const [content, setContent] = useState<MovieById>({} as MovieById);
+    const [isLoading, setIsLoading] = useState(true);
+    const [contentEpisodes, setContentEpisodes] = useState<any[] | null>(null);
+    const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
+    const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
+    const [magnetTorrentSelected, setmagnetTorrentSelected] = useState<string>('');
+
+    // Fetch the movie/show data
+    useEffect(() => {
+        const fetchMovies = async () => {
+            try {
+                const id = parseInt(searchParams?.get('id') || '', 10)
+                const movie = await GetById(id);
+                setContent(movie);
+            } catch (error) {
+                console.error('Error fetching content:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchMovies();
+    }, [searchParams]); // Only re-run if searchParams changes
+
+    // Initialize seasons and episodes when content changes
+    useEffect(() => {
+        if (!content) return;
+
+        const hasSeasons = content?.content_type === 'tv';
+
+        if (hasSeasons && content.seasons) {
+            // Find the last season with episodes
+            const lastSeasonWithEpisodes = content.seasons.findLast(season =>
+                season?.episodes && season.episodes.length > 0
+            );
+
+            if (lastSeasonWithEpisodes) {
+                setSelectedSeason(lastSeasonWithEpisodes.seasonId);
+
+                // Find episodes for this season
+                const episodes = lastSeasonWithEpisodes.episodes;
+                if (episodes && episodes.length > 0) {
+                    setContentEpisodes(episodes);
+
+                    // Find the last episode with a magnet link
+                    const lastEpisodeWithMagnet = episodes.findLast(episode =>
+                        episode?.magnet_torrent != undefined &&
+                        episode?.magnet_torrent != null &&
+                        episode?.magnet_torrent != ''
+                    );
+
+                    if (lastEpisodeWithMagnet) {
+                        setSelectedEpisode(lastEpisodeWithMagnet.episodeId);
+                    }
+                }
+            }
+        } else {
+            setmagnetTorrentSelected(content.magnet_torrent || '');
+        }
+    }, [content]); // Only re-run if content changes
+
+    // Update episodes when selected season changes
+    useEffect(() => {
+        if (!content || !content.seasons || selectedSeason === null) return;
+
+        const selectedSeasonData = content.seasons.find(season =>
+            season.seasonId === selectedSeason
+        );
+
+        if (selectedSeasonData && selectedSeasonData.episodes && selectedSeasonData.episodes.length > 0) {
+            setContentEpisodes(selectedSeasonData.episodes);
+
+            if (selectedEpisode === null) {
+                setSelectedEpisode(selectedSeasonData.episodes.findLast(episode => episode)?.episodeId || null);
+            }
+
+            setSelectedEpisode(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.episodeId || null);
+            setmagnetTorrentSelected(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.magnet_torrent || '');
+        } else {
+            setContentEpisodes(null);
+            setSelectedEpisode(null);
+        }
+    }, [selectedSeason, selectedEpisode, content, contentEpisodes]);
+
+    const hasSeasons = content?.content_type === 'tv';
+    const seasons = hasSeasons ? content.seasons : null;
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-xl">Loading content...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!content || !content.id) {
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
+                    <div className="text-5xl mb-6">🎬</div>
+                    <h2 className="text-2xl font-bold mb-4">Content Not Found</h2>
+                    <p className="text-gray-400 mb-6">We couldn't find what you're looking for.</p>
+                    <button
+                        onClick={() => router.back()}
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-lg"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+            <main className="container mx-auto px-4 py-8">
+                {/* Back Button */}
+<button
+    onClick={() => router.push('/')}
+    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-300 mb-6 shadow-md hover:shadow-lg flex items-center"
+>
+    <span className="mr-2">←</span> Back to Home
+</button>
+
+{/* Content Header */ }
+<div className="mb-8">
+    <h1 className="text-4xl font-bold mb-4">{content.title}</h1>
+
+    <div className="relative w-full md:w-3/4 mb-6">
+        <Image
+            alt={content.title}
+            src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${content.backdrop_path}`}
+            width={800}
+            height={450}
+            className="rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl"></div>
+    </div>
+
+    <div className="flex items-center text-gray-400 mb-4">
+        <span className="px-3 py-1 bg-blue-900/40 rounded-full text-sm mr-3">
+            {content.content_type === 'tv' ? 'TV Series' : 'Movie'}
+        </span>
+        {content.release_date && (
+            <span>{new Date(content.release_date).getFullYear()}</span>
+        )}
+    </div>
+
+    <p className="text-lg text-gray-300 leading-relaxed">
+        {content.overview || "No description available for this title."}
+    </p>
+</div>
+
+{/* Video Player */ }
+<div className="mb-10 w-full h-full">
+    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+    <div className="rounded-xl overflow-hidden shadow-2xl bg-black">
+        <Player magnetTorrent={magnetTorrentSelected} />
+    </div>
+</div>
+
+{/* Season selection - only shown for TV shows with seasons */ }
+{
+    hasSeasons && (
+        <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4">Seasons</h2>
+            <div className="flex flex-wrap gap-3">
+                {seasons && seasons.map(season => (
+                    <button
+                        key={season.seasonId}
+                        className={`px-6 py-3 rounded-full transition-all duration-300 ${selectedSeason === season.seasonId
+                            ? "bg-blue-600 text-white shadow-md shadow-blue-500/30"
+                            : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                            }`}
+                        onClick={() => setSelectedSeason(season.seasonId)}
+                    >
+                        {`Season ${season.seasonId}`}
+                    </button>
+                ))}
+            </div>
+        </div>
+    )
+}
+
+{/* Episode list */ }
+{
+    contentEpisodes && (
+        <div className="mb-10">
+            <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {contentEpisodes
+                    ?.filter(episode =>
+                        episode?.magnet_torrent != undefined &&
+                        episode?.magnet_torrent != null &&
+                        episode?.magnet_torrent != ''
+                    )
+                    .map(episode => (
+                        <div
+                            key={episode.episodeId}
+                            className={`p-5 rounded-xl cursor-pointer transition-all duration-300 ${selectedEpisode === episode.episodeId
+                                ? "bg-blue-600 shadow-lg shadow-blue-500/30"
+                                : "bg-gray-800 hover:bg-gray-700"
+                                }`}
+                            onClick={() => {
+                                setSelectedEpisode(episode.episodeId)
+                            }}
+                        >
+                            <div className="flex justify-between items-center mb-2">
+                                <h3 className="font-bold">Episode {episode.episodeId}</h3>
+                                <span className="text-xs px-2 py-1 bg-gray-900/50 rounded-full">
+                                    Season {selectedSeason}
+                                </span>
+                            </div>
+                            <h4 className="text-lg mb-2">{episode.title}</h4>
+                            <p className="text-sm text-gray-300 line-clamp-2">{episode.description}</p>
+                        </div>
+                    ))
+                }
+            </div>
+        </div>
+    )
+}
+
+{
+    hasSeasons && !contentEpisodes && (
+        <div className="mb-8 p-6 bg-gray-800/60 rounded-xl text-center">
+            <div className="text-4xl mb-4">📺</div>
+            <p className="text-lg text-gray-400">No episodes available for this season</p>
+        </div>
+    )
+}
+
+{/* Footer */ }
+<footer className="text-center py-6 text-gray-500 text-sm mt-12 border-t border-gray-800">
+    <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
+</footer>
+            </main >
+        </div >
+    );
+}
+
+// Componente principal que usa Suspense
+export default function WatchPageold() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-xl">Loading content...</p>
+                </div>
+            </div>
+        }>
+            <WatchPageContent />
+        </Suspense>
+    );
+}
+*/

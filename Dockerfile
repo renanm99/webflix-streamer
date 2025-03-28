@@ -21,7 +21,7 @@ COPY . .
 ENV PORT=9000
 
 # Create a .env file with required variables
-RUN echo "NEXT_PUBLIC_URL_PATH=https://image.tmdb.org/t/p/w500" > .env
+RUN echo "TMDB_API_URL_IMAGE=https://image.tmdb.org/t/p/w500" > .env
 
 # Build the application
 #RUN pnpm build

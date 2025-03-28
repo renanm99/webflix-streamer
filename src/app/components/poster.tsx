@@ -8,7 +8,7 @@ interface PosterProps {
   year: string | undefined;
 }
 
-const urlPoster = process.env.NEXT_PUBLIC_URL_PATH;
+const urlPoster = process.env.NEXT_PUBLIC_TMDB_POSTER_URL;
 const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [imageSrc, setImageSrc] = useState<string>(urlPoster + imageUrl);

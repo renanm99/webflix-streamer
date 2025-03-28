@@ -35,7 +35,8 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "src/pages/api/torrent/[id]",
-    "../moviedatabase/removeduplicates.ts"
+    "../moviedatabase/removeduplicates.ts",
+    "src/app/watch/watchpage.tsx.old"
   ],
   "exclude": [
     "node_modules",

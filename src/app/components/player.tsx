@@ -59,7 +59,7 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   }, [streamUrl])
 
   return (
-    <div className="relative w-full h-full md:w-3/4">
+    <div className="">
       {(isLoading && streamUrl === '/api/stream/undefined') && (
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-900 rounded-lg">
           <div className="mb-4">

@@ -2,31 +2,25 @@
 
 import { useEffect, useState, Suspense } from 'react'
 import Player from '../components/player'
-//import { repo } from '../../../repo/db'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 
-import { GetWatchMovie } from "@/../repo/dbHandler";
-import { Movie } from "@/../repo/models/movie";
+import { GetById } from "@/../repo/tmdbApi";
+import { MovieById } from "@/../repo/models/movie";
 
-// Componente separado que usa useSearchParams
 function WatchPageContent() {
-    const searchParams = useSearchParams()
-    const router = useRouter()
+    const searchParams = useSearchParams();
+    const router = useRouter();
 
-    const [content, setContent] = useState<Movie>({} as Movie);
+    const [content, setContent] = useState<MovieById>({} as MovieById);
     const [isLoading, setIsLoading] = useState(true);
-    const [contentEpisodes, setContentEpisodes] = useState<any[] | null>(null);
-    const [selectedSeason, setSelectedSeason] = useState<number | null>(null);
-    const [selectedEpisode, setSelectedEpisode] = useState<number | null>(null);
-    const [magnetTorrentSelected, setmagnetTorrentSelected] = useState<string>('');
 
     // Fetch the movie/show data
     useEffect(() => {
-        const fetchMovies = async () => {
+        const fetchMovie = async () => {
             try {
-                const id = parseInt(searchParams?.get('id') || '', 10)
-                const movie = await GetWatchMovie(id);
+                const id = parseInt(searchParams?.get('id') || '', 10);
+                const movie = await GetById(id);
                 setContent(movie);
             } catch (error) {
                 console.error('Error fetching content:', error);
@@ -35,169 +29,186 @@ function WatchPageContent() {
             }
         };
 
-        fetchMovies();
-    }, [searchParams]); // Only re-run if searchParams changes
-
-    // Initialize seasons and episodes when content changes
-    useEffect(() => {
-        if (!content) return;
-
-        const hasSeasons = content?.content_type === 'tv';
-
-        if (hasSeasons && content.seasons) {
-            // Find the last season with episodes
-            const lastSeasonWithEpisodes = content.seasons.findLast(season =>
-                season?.episodes && season.episodes.length > 0
-            );
-
-            if (lastSeasonWithEpisodes) {
-                setSelectedSeason(lastSeasonWithEpisodes.seasonId);
-
-                // Find episodes for this season
-                const episodes = lastSeasonWithEpisodes.episodes;
-                if (episodes && episodes.length > 0) {
-                    setContentEpisodes(episodes);
-
-                    // Find the last episode with a magnet link
-                    const lastEpisodeWithMagnet = episodes.findLast(episode =>
-                        episode?.magnet_torrent != undefined &&
-                        episode?.magnet_torrent != null &&
-                        episode?.magnet_torrent != ''
-                    );
-
-                    if (lastEpisodeWithMagnet) {
-                        setSelectedEpisode(lastEpisodeWithMagnet.episodeId);
-                    }
-                }
-            }
-        } else {
-            setmagnetTorrentSelected(content.magnet_torrent || '');
-        }
-    }, [content]); // Only re-run if content changes
-
-    // Update episodes when selected season changes
-    useEffect(() => {
-        if (!content || !content.seasons || selectedSeason === null) return;
-
-        const selectedSeasonData = content.seasons.find(season =>
-            season.seasonId === selectedSeason
-        );
-
-        if (selectedSeasonData && selectedSeasonData.episodes && selectedSeasonData.episodes.length > 0) {
-            setContentEpisodes(selectedSeasonData.episodes);
-
-            if (selectedEpisode === null) {
-                setSelectedEpisode(selectedSeasonData.episodes.findLast(episode => episode)?.episodeId || null);
-            }
-
-            setSelectedEpisode(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.episodeId || null);
-            setmagnetTorrentSelected(contentEpisodes?.find(episode => episode.episodeId === selectedEpisode)?.magnet_torrent || '');
-        } else {
-            setContentEpisodes(null);
-            setSelectedEpisode(null);
-        }
-    }, [selectedSeason, selectedEpisode, content, contentEpisodes]);
-
-    const hasSeasons = content?.content_type === 'tv';
-    const seasons = hasSeasons ? content.seasons : null;
+        fetchMovie();
+    }, [searchParams]);
 
     if (isLoading) {
-        return <div className="container mx-auto px-4 py-16">Loading content...</div>
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-xl">Loading content...</p>
+                </div>
+            </div>
+        );
     }
 
     if (!content || !content.id) {
-        return <div className="container mx-auto px-4 py-16">Content not found</div>
+        return (
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
+                    <div className="text-5xl mb-6">🎬</div>
+                    <h2 className="text-2xl font-bold mb-4">Content Not Found</h2>
+                    <p className="text-gray-400 mb-6">We couldn't find what you're looking for.</p>
+                    <button
+                        onClick={() => router.back()}
+                        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full transition-colors shadow-lg"
+                    >
+                        Back to Home
+                    </button>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <main className="container mx-auto px-4 py-8">
-            <button
-                onClick={() => router.push('/')}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-md mb-6 transition-colors">
-                ←   Back
-            </button>
+        <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+            <main className="container mx-auto px-4 py-8">
+                {/* Back Button */}
+                <button
+                    onClick={() => router.back()}
+                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-full transition-all duration-300 mb-6 shadow-md hover:shadow-lg flex items-center"
+                >
+                    <span className="mr-2">←</span> Back
+                </button>
 
-            <div className="mb-8">
-                <h1 className="text-4xl font-bold mb-4">{content.title}</h1>
-                <Image
-                    alt={content.title}
-                    src={`${process.env.NEXT_PUBLIC_URL_PATH}${content.backdrop_path}`}
-                    width={800}
-                    height={450}
-                    className={`rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 w-full h-full md:w-3/4`}
-                />
-                <p className="text-gray-400 mb-4">
-                    {content.release_date} •
-                    {/*content.genres?.join(' • ') || "Drama • Action"*/}
-                </p>
-                <p className="text-lg">
-                    {content.overview || "No description available for this title."}
-                </p>
-            </div>
+                {/* Content Header */}
+                <div className="mb-8">
+                    <h1 className="text-4xl font-bold mb-4">{content.title}</h1>
+                    {content.tagline && <p className="italic text-blue-400 mb-4">"{content.tagline}"</p>}
 
-            <div className="mb-10 w-full h-full">
-                <Player magnetTorrent={magnetTorrentSelected} />
-            </div>
+                    <div className="relative w-full md:w-3/4 mb-6">
+                        <Image
+                            alt={content.title}
+                            src={`${process.env.NEXT_PUBLIC_TMDB_BACKDROP_URL}${content.backdrop_path}`}
+                            width={800}
+                            height={450}
+                            className="rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl"></div>
+                    </div>
 
-            {/* Season selection - only shown for TV shows with seasons */}
-            {hasSeasons && (
-                <div className="mb-6">
-                    <h2 className="text-2xl font-semibold mb-4">Seasons</h2>
-                    <div className="flex flex-wrap gap-3">
-                        {seasons && seasons.map(season => (
-                            <button
-                                key={season.seasonId}
-                                className={`px-4 py-2 rounded-lg transition-colors ${selectedSeason === season.seasonId
-                                    ? "bg-blue-900 border border-blue-500"
-                                    : "bg-gray-800 hover:bg-gray-700"
-                                    }`}
-                                onClick={() => setSelectedSeason(season.seasonId)}
-                            >
-                                {`Season ${season.seasonId}`}
-                            </button>
-                        ))}
+                    <p className="text-lg text-gray-300 leading-relaxed mb-4">
+                        {content.overview || "No description available for this title."}
+                    </p>
+
+                    <div className="flex flex-wrap gap-4 text-gray-400 text-sm">
+                        <span>Release Date: <strong>{content.release_date}</strong></span>
+                        <span>Status: <strong>{content.status}</strong></span>
+                        <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : "N/A"}</strong></span>
+                        <span>Budget: <strong>${content.budget.toLocaleString()}</strong></span>
+                        <span>Vote Average: <strong>{content.vote_average.toFixed(1)}</strong></span>
+                        <span>Vote Count: <strong>{content.vote_count}</strong></span>
                     </div>
                 </div>
-            )}
 
-            {/* Resto do componente... */}
-            {contentEpisodes && (
-                <div className="mb-8">
-                    <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {contentEpisodes?.filter(episode => episode?.magnet_torrent != undefined && episode?.magnet_torrent != null && episode?.magnet_torrent != '').map(episode => (
-                            <div
-                                key={episode.episodeId}
-                                className={`p-4 rounded-lg cursor-pointer transition-colors ${selectedEpisode === episode.episodeId
-                                    ? "bg-blue-900 border border-blue-500"
-                                    : "bg-gray-800 hover:bg-gray-700"
-                                    }`}
-                                onClick={() => {
-                                    setSelectedEpisode(episode.episodeId)
-                                }}
-                            >
-                                <h3 className="font-semibold">{episode.title}</h3>
-                                <p className="text-sm text-gray-300">{episode.description}</p>
+                {/* Belongs to Collection */}
+                {content.belongs_to_collection && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Part of the Collection</h2>
+                        <div className="flex items-center gap-4">
+                            <Image
+                                src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${content.belongs_to_collection.poster_path}`}
+                                alt={content.belongs_to_collection.name}
+                                width={100}
+                                height={150}
+                                className="rounded-md shadow-md"
+                            />
+                            <div>
+                                <h3 className="text-lg font-bold">{content.belongs_to_collection.name}</h3>
                             </div>
-                        ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Genres */}
+                {content.genres && content.genres.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Genres</h2>
+                        <div className="flex flex-wrap gap-3">
+                            {content.genres.map((genre) => (
+                                <span
+                                    key={genre.id}
+                                    className="px-4 py-2 bg-gray-800 text-gray-300 rounded-full text-sm"
+                                >
+                                    {genre.name}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Production Companies */}
+                {content.production_companies && content.production_companies.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Production Companies</h2>
+                        <div className="relative bg-gray-800/50 backdrop-blur-md p-6 rounded-lg shadow-lg">
+                            <div className="flex flex-wrap gap-6">
+                                {content.production_companies.map((company) => (
+                                    <div key={company.id} className="flex items-center gap-3">
+                                        {company.logo_path && (
+                                            <Image
+                                                src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${company.logo_path}`}
+                                                alt={company.name}
+                                                width={50}
+                                                height={50}
+                                                className="rounded-md"
+                                            />
+                                        )}
+                                        <span className="text-gray-300">{company.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Spoken Languages */}
+                {content.spoken_languages && content.spoken_languages.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Spoken Languages</h2>
+                        <div className="flex flex-wrap gap-3">
+                            {content.spoken_languages.map((language) => (
+                                <span
+                                    key={language.iso_639_1}
+                                    className="px-4 py-2 bg-gray-800 text-gray-300 rounded-full text-sm"
+                                >
+                                    {language.english_name}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* Video Player */}
+                <div className="mb-10 w-full h-full">
+                    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black">
+                        <Player magnetTorrent={content.magnet_torrent || ''} />
                     </div>
                 </div>
-            )}
 
-            {hasSeasons && !contentEpisodes && (
-                <div className="mb-8">
-                    <p className="text-lg text-gray-400">No episodes available</p>
-                </div>
-            )}
-        </main>
-    )
+                {/* Footer */}
+                <footer className="text-center py-6 text-gray-500 text-sm mt-12 border-t border-gray-800">
+                    <p>© {new Date().getFullYear()} WebFlix Streamer. All rights reserved.</p>
+                </footer>
+            </main>
+        </div>
+    );
 }
 
-// Componente principal que usa Suspense
+// Main component with Suspense
 export default function WatchPage() {
     return (
-        <Suspense fallback={<div className="container mx-auto px-4 py-16">Loading...</div>}>
+        <Suspense fallback={
+            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+                <div className="text-center">
+                    <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+                    <p className="text-xl">Loading content...</p>
+                </div>
+            </div>
+        }>
             <WatchPageContent />
         </Suspense>
-    )
+    );
 }
