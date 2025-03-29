@@ -5,7 +5,7 @@ import Poster from '@/app/components/poster'
 import Header from '@/app/components/header'
 import Loading from '@/app/components/loading'
 import Footer from '@/app/components/footer'
-import { GetPopular } from "@/../repo/tmdbApi";
+import { GetPopular, GetSeachMovieName } from "@/../repo/tmdbApi";
 import { Movie } from "@/../repo/models/movie";
 
 export default function MoviesPage() {
@@ -14,8 +14,8 @@ export default function MoviesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [fetchPage, setFetchPage] = useState(1);
+    const [isSearching, setisSearching] = useState(false);
 
-    // Remove duplicates based on movie id
     const removeDuplicates = (movies: Movie[]): Movie[] => {
         const uniqueIds = new Set();
         return movies.filter(movie => {
@@ -30,50 +30,57 @@ export default function MoviesPage() {
     useEffect(() => {
         const fetchMovies = async () => {
             try {
-                const movies = await GetPopular(fetchPage);
+                const movies = searchQuery ? await GetSeachMovieName(searchQuery, fetchPage) : await GetPopular(fetchPage);
+
                 setPopularMovies(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
-                setFetchPage(prevPage => prevPage + 1);
             } catch (error) {
                 console.error('Error fetching movies:', error);
             } finally {
                 setIsLoading(false);
+                setIsLoadingMore(false);
+
             }
         };
 
         fetchMovies();
-    }, []);
+    }, [fetchPage]);
 
-    // Handle search input changes
     const handleSearch = (query: string) => {
+        const waittime = async (seconds: number) => {
+            setisSearching(true);
+            await new Promise(resolve => setTimeout(resolve, seconds));
+            setisSearching(false);
+        }
+        setIsLoading(true);
         setSearchQuery(query);
-    };
 
-    // Handle loading more movies
-    const handleLoadMore = () => {
         const fetchMovies = async () => {
             try {
-                setIsLoadingMore(true);
-                const movies = await GetPopular(fetchPage);
-
+                const movies = await GetSeachMovieName(query, fetchPage);
                 setPopularMovies(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
-                setFetchPage(prevPage => prevPage + 1);
             } catch (error) {
                 console.error('Error fetching movies:', error);
             } finally {
-                setIsLoadingMore(false);
-            }
-        }
+                waittime(1000).then(() => { setIsLoading(false); });
 
-        fetchMovies();
+            }
+        };
+        if (!isSearching) {
+            waittime(400).then(() => { if (!isSearching) { fetchMovies(); } });
+        }
     };
 
-    // Filter movies based on search query
+    const handleLoadMore = () => {
+        setFetchPage(prev => prev + 1);
+        setIsLoadingMore(true);
+    };
+
     const filteredMovies = popularMovies.filter(movie =>
         movie.title.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -88,11 +95,12 @@ export default function MoviesPage() {
                     {searchQuery ? 'Search Results' : 'Trending Movies'}
                 </h1>
 
-                {/* Search Results Message */}
-                {searchQuery && (
-                    <p className="text-center text-gray-400 mb-6">
-                        Showing results for &quot;{searchQuery}&quot;
-                    </p>
+                {isLoading && (<>
+                    {searchQuery && (
+                        <p className="text-center text-gray-400 mb-6">
+                            Showing results for &quot;{searchQuery}&quot;
+                        </p>
+                    )}</>
                 )}
 
                 {/* Content Section */}
@@ -115,13 +123,16 @@ export default function MoviesPage() {
                     </div>
                 ) : (
                     <div className="flex flex-col items-center justify-center py-20">
-                        <div className="text-5xl mb-6">🎬</div>
-                        <p className="text-xl text-gray-400 text-center max-w-md">
-                            {searchQuery
-                                ? `No movies found matching "${searchQuery}"`
-                                : `Well... this is awkward. We couldn't find any movies. But don't worry, we're working on it!`
-                            }
-                        </p>
+                        {!isLoading && (<>
+                            <div className="text-5xl mb-6">🎬</div>
+
+                            <p className="text-xl text-gray-400 text-center max-w-md">
+                                {searchQuery
+                                    ? `No movies found matching "${searchQuery}"`
+                                    : `Well... this is awkward. We couldn't find any movies. But don't worry, we're working on it!`
+                                }
+                            </p>
+                        </>)}
                     </div>
                 )}
 

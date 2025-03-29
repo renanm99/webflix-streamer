@@ -5,7 +5,7 @@ import Poster from '@/app/components/poster'
 import Header from '@/app/components/header'
 import Loading from '@/app/components/loading'
 import Footer from '@/app/components/footer'
-import { GetTVPopular } from "@/../repo/tmdbApi";
+import { GetTVPopular, GetSeachTVName } from "@/../repo/tmdbApi";
 import { TV } from "@/../repo/models/movie";
 
 export default function MoviesPage() {
@@ -14,6 +14,7 @@ export default function MoviesPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [fetchPage, setFetchPage] = useState(1);
+    const [isSearching, setisSearching] = useState(false);
 
     // Remove duplicates based on movie id
     const removeDuplicates = (movies: TV[]): TV[] => {
@@ -30,47 +31,54 @@ export default function MoviesPage() {
     useEffect(() => {
         const fetchMovies = async () => {
             try {
-                const movies = await GetTVPopular(fetchPage);
+                const movies = searchQuery ? await GetSeachTVName(searchQuery, fetchPage) : await GetTVPopular(fetchPage);
+
                 setPopularMovies(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
-                setFetchPage(prevPage => prevPage + 1);
             } catch (error) {
                 console.error('Error fetching movies:', error);
             } finally {
                 setIsLoading(false);
+                setIsLoadingMore(false);
             }
         };
 
         fetchMovies();
-    }, []);
+    }, [fetchPage]);
 
-    // Handle search input changes
     const handleSearch = (query: string) => {
+        const waittime = async (seconds: number) => {
+            setisSearching(true);
+            await new Promise(resolve => setTimeout(resolve, seconds));
+            setisSearching(false);
+        }
+        setIsLoading(true);
         setSearchQuery(query);
-    };
 
-    // Handle loading more movies
-    const handleLoadMore = () => {
         const fetchMovies = async () => {
             try {
-                setIsLoadingMore(true);
-                const movies = await GetTVPopular(fetchPage);
-
+                const movies = await GetSeachTVName(query, fetchPage);
                 setPopularMovies(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
-                setFetchPage(prevPage => prevPage + 1);
             } catch (error) {
                 console.error('Error fetching movies:', error);
             } finally {
-                setIsLoadingMore(false);
+                waittime(1000).then(() => { setIsLoading(false); });
             }
-        }
+        };
 
-        fetchMovies();
+        if (!isSearching) {
+            waittime(400).then(() => { if (!isSearching) { fetchMovies(); } });
+        }
+    };
+
+    const handleLoadMore = () => {
+        setFetchPage(prev => prev + 1);
+        setIsLoadingMore(true);
     };
 
     // Filter movies based on search query

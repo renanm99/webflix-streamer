@@ -100,3 +100,53 @@ export async function GetById(id: number): Promise<MovieById> {
         return {} as MovieById;
     }
 }
+
+export async function GetSeachMovieName(query: string, page: number): Promise<Movie[]> {
+    const queryString = query.split(" ").map((title) => `${title}`).join("+");
+    const url = `${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`
+    console.log("URL", url)
+    try {
+        const response = await fetch(`${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`, {
+            headers: {
+                "authorization": `Bearer ${process.env.TMDB_API_KEY}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`TMDB API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json() as TMDBResponseMovie
+        return data.results;
+    } catch (error) {
+        console.error("Failed to fetch movie:", error);
+        return [];
+    }
+}
+
+export async function GetSeachTVName(query: string, page: number): Promise<TV[]> {
+    const queryString = query.split(" ").map((title) => `${title}`).join("+");
+    const url = `${process.env.TMDB_API_URL}/search/tv?query=${queryString}&include_adult=false&language=en-US&page=${page}`
+
+
+    console.log("URL", url)
+    try {
+        const response = await fetch(`${process.env.TMDB_API_URL}/search/tv?query=${queryString}&include_adult=false&language=en-US&page=${page}`, {
+            headers: {
+                "authorization": `Bearer ${process.env.TMDB_API_KEY}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`TMDB API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json() as TMDBResponseTV
+        return data.results;
+    } catch (error) {
+        console.error("Failed to fetch movie:", error);
+        return [];
+    }
+}
+
+
