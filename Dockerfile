@@ -24,7 +24,7 @@ ENV PORT=9000
 RUN echo "NEXT_PUBLIC_URL_PATH=https://image.tmdb.org/t/p/w500" > .env
 
 # Build the application
-#RUN pnpm build
+RUN pnpm build
 
 # Start the application
-CMD ["pnpm", "dev", "-p" , "9000"]
+CMD ["pnpm", "dev"]
