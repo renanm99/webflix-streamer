@@ -117,6 +117,7 @@ export default function MoviesPage() {
                                     title={result.name}
                                     imageUrl={result.poster_path}
                                     year={result.first_air_date}
+                                    contentType='tv'
                                 />
                             </div>
                         ))}

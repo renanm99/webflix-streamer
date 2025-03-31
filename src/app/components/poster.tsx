@@ -6,10 +6,11 @@ interface PosterProps {
   title: string;
   imageUrl: string;
   year: string | undefined;
+  contentType: string;
 }
 
 const urlPoster = process.env.NEXT_PUBLIC_TMDB_POSTER_URL;
-const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year }) => {
+const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year, contentType }) => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [imageSrc, setImageSrc] = useState<string>(urlPoster + imageUrl);
   const [imageError, setImageError] = useState<boolean>(false);
@@ -28,7 +29,7 @@ const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year }) => {
     <>
       <div className="flex flex-col w-80 items-center">
         <div className="flex flex-col items-center justify-center">
-          <a href={'/watch?id=' + id}>
+          <a href={`/watch?content=${contentType}&id=${id}`}>
             <div className="relative">
               <Image
                 src={imageUrl ? imageSrc : '/notfound.png'}

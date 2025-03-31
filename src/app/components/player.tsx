@@ -20,9 +20,6 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
     if (!videoRef.current || !streamUrl) return
 
     const video = videoRef.current
-    console.log("video: ", video)
-    console.log("isloading: ", isLoading)
-    console.log("streamUrl: ", streamUrl)
 
     const eventHandler = () => {
       const playPromise = video.play()

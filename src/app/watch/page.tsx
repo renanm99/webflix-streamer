@@ -1,27 +1,36 @@
 'use client'
 
-import { useEffect, useState, Suspense } from 'react'
+import { useEffect, useState, Suspense, useRef } from 'react'
 import Player from '../components/player'
 import Footer from '../components/footer'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { GetById } from "@/../repo/tmdbApi";
-import { MovieById } from "@/../repo/models/movie";
+import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMovieMagnetLink, GetTVMagnetLink } from "@/../repo/tmdbApi";
+import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
-
-    const [content, setContent] = useState<MovieById>({} as MovieById);
+    const [content, setContent] = useState<MovieById | TVById>({} as (MovieById | TVById));
+    const [contentEpisodes, setContentEpisodes] = useState<TVSeasonDetails>({} as TVSeasonDetails);
+    const [selectedSeason, setSelectedSeason] = useState<number>(0);
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
+    const [contentMagnetLink, setcontentMagnetLink] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
 
     // Fetch the movie/show data
     useEffect(() => {
         const fetchMovie = async () => {
             try {
+                const contentType = searchParams?.get('content')?.toString();
                 const id = parseInt(searchParams?.get('id') || '', 10);
-                const movie = await GetById(id);
-                setContent(movie);
+                if (contentType == 'movie') {
+                    setContent(await GetMovieById(id))
+                    setcontentMagnetLink(await GetMovieMagnetLink(id))
+                } else {
+                    setContent(await GetTVById(id))
+                    setContentEpisodes(await GetTVSeasonsDetailsById(id))
+                }
             } catch (error) {
                 console.error('Error fetching content:', error);
             } finally {
@@ -31,6 +40,22 @@ function WatchPageContent() {
 
         fetchMovie();
     }, [searchParams]);
+
+    useEffect(() => {
+        const fetchMagnetLink = async () => {
+            try {
+                setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
+            } catch (error) {
+                console.error('Error fetching content:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+
+        fetchMagnetLink()
+
+        console.log("Magnet Link:", contentMagnetLink);
+    }, [selectedSeason, selectedEpisode]);
 
     if (isLoading) {
         return (
@@ -61,6 +86,25 @@ function WatchPageContent() {
         );
     }
 
+    const playerRef = useRef<HTMLDivElement>(null);
+
+    const scrollToPlayer = () => {
+        if (playerRef.current) {
+            playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    };
+
+    const handleSeasonClick = (seasonNumber: number) => {
+        setSelectedSeason(seasonNumber);
+        setSelectedEpisode(1);
+        scrollToPlayer();
+    }
+
+    const handleEpisodeClick = (episode_number: number) => {
+        setSelectedEpisode(episode_number);
+        scrollToPlayer();
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
             <main className="container mx-auto px-4 py-8">
@@ -74,12 +118,12 @@ function WatchPageContent() {
 
                 {/* Content Header */}
                 <div className="mb-8">
-                    <h1 className="text-4xl font-bold mb-4">{content.title}</h1>
+                    <h1 className="text-4xl font-bold mb-4">{('title' in content) ? content.title : content.name}</h1>
                     {content.tagline && <p className="italic text-blue-400 mb-4">&quot;{content.tagline}&quot;</p>}
 
                     <div className="relative w-full md:w-3/4 mb-6">
                         <Image
-                            alt={content.title}
+                            alt={('title' in content) ? content.title : content.name}
                             src={`${process.env.NEXT_PUBLIC_TMDB_BACKDROP_URL}${content.backdrop_path}`}
                             width={800}
                             height={450}
@@ -93,17 +137,20 @@ function WatchPageContent() {
                     </p>
 
                     <div className="flex flex-wrap gap-4 text-gray-400 text-sm">
-                        <span>Release Date: <strong>{content.release_date}</strong></span>
+                        {('title' in content) ? <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span> : <></>}
+                        {!('title' in content) && content.number_of_seasons > 1 ? <span>Release Date: <strong>{content.first_air_date}</strong></span> : <></>}
+                        {!('title' in content) && content.number_of_seasons > 1 ? <span>Last Season Release Date: <strong>{content.last_air_date}</strong></span> : !('title' in content) ? <span>Release Date: <strong>{content.last_air_date}</strong></span> : <></>}
+                        {('title' in content) ? <span>Release Date: <strong>{content.release_date}</strong></span> : <></>}
                         <span>Status: <strong>{content.status}</strong></span>
-                        <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span>
-                        <span>Budget: <strong>${content.budget.toLocaleString()}</strong></span>
+                        {('title' in content) ? <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span> : <></>}
+                        {('title' in content) ? <span>Budget: <strong>${content.budget.toLocaleString()}</strong></span> : <></>}
                         <span>Vote Average: <strong>{content.vote_average.toFixed(1)}</strong></span>
                         <span>Vote Count: <strong>{content.vote_count}</strong></span>
                     </div>
                 </div>
 
                 {/* Belongs to Collection */}
-                {content.belongs_to_collection && (
+                {('title' in content) && content.belongs_to_collection && (
                     <div className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">Part of the Collection</h2>
                         <div className="flex items-center gap-4">
@@ -121,6 +168,7 @@ function WatchPageContent() {
                     </div>
                 )}
 
+
                 {/* Genres */}
                 {content.genres && content.genres.length > 0 && (
                     <div className="mb-8">
@@ -137,6 +185,32 @@ function WatchPageContent() {
                         </div>
                     </div>
                 )}
+
+                {/* Networks */}
+                {!('title' in content) && content.networks && content.networks.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Networks</h2>
+                        <div className="relative bg-gray-800/50 backdrop-blur-md p-6 rounded-lg shadow-lg">
+                            <div className="flex flex-wrap gap-6">
+                                {content.networks.map((network) => (
+                                    <div key={network.id} className="flex items-center gap-3">
+                                        {network.logo_path && (
+                                            <Image
+                                                src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${network.logo_path}`}
+                                                alt={network.name}
+                                                width={50}
+                                                height={50}
+                                                className="rounded-md"
+                                            />
+                                        )}
+                                        <span className="text-gray-300">{network.name}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )
+                }
 
                 {/* Production Companies */}
                 {content.production_companies && content.production_companies.length > 0 && (
@@ -161,7 +235,8 @@ function WatchPageContent() {
                             </div>
                         </div>
                     </div>
-                )}
+                )
+                }
 
                 {/* Spoken Languages */}
                 {content.spoken_languages && content.spoken_languages.length > 0 && (
@@ -178,18 +253,73 @@ function WatchPageContent() {
                             ))}
                         </div>
                     </div>
-                )}
-                {/*"magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710"*/}
-                <div className="mb-10 w-full h-full">
-                    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+                )
+                }
 
-                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                        <Player magnetTorrent={content.magnet_torrent || "magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710"} />
+                {/* Seasons */}
+                {!('title' in content) && content.seasons && content.seasons.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Seasons</h2>
+                        <div className="flex flex-wrap gap-6">
+                            {content.seasons.map((season) => (
+                                <button
+                                    key={season.id}
+                                    onClick={() => handleSeasonClick(season.season_number)}
+                                    className="flex flex-col items-center cursor-pointer hover:scale-105 transition-transform"
+                                >
+                                    <Image
+                                        src={season.poster_path ? `${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${season.poster_path}` : '/notfound.png'}
+                                        alt={season.name}
+                                        width={150}
+                                        height={225}
+                                        className="rounded-md shadow-md"
+                                    />
+                                    <span className="text-gray-300 mt-2">{season.name}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
+                )}
+
+                {/* Episodes */}
+                {!('title' in content) && contentEpisodes.episodes && contentEpisodes.episodes.length > 0 && (
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
+                        <div className="flex flex-col gap-6">
+                            {contentEpisodes.episodes.map((episode) => (
+                                <button
+                                    key={episode.id}
+                                    onClick={() => handleEpisodeClick(episode.episode_number)}
+                                    className="flex items-start gap-4 text-left bg-gray-800/10 hover:bg-gray-700/50 p-4 rounded-lg transition-colors"
+                                >
+                                    <Image
+                                        src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${episode.still_path}`}
+                                        alt={episode.name}
+                                        width={150}
+                                        height={100}
+                                        className="rounded-md shadow-md"
+                                    />
+                                    <div>
+                                        <h3 className="text-lg font-bold">{episode.name}</h3>
+                                        <p className="text-gray-400 text-sm">Date: {episode.air_date}</p>
+                                        <p className="text-gray-300">{episode.overview}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+                <div ref={playerRef} className="mb-10 w-full h-full">
+                    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+                    {contentMagnetLink != '' && (
+                        <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
+                            <Player magnetTorrent={contentMagnetLink} />
+                        </div>)}
                 </div>
+
                 <Footer />
-            </main>
-        </div>
+            </main >
+        </div >
     );
 }
 

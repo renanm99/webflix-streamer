@@ -84,6 +84,7 @@ export default function MoviesPage() {
                   title={result.title}
                   imageUrl={result.poster_path}
                   year={result.release_date ? result.release_date : result.first_air_date}
+                  contentType='movie'
                 />
               </div>
             ))}
