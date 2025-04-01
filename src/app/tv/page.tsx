@@ -10,7 +10,7 @@ import { TV } from "@/../repo/models/movie";
 
 export default function MoviesPage() {
     const [searchQuery, setSearchQuery] = useState('');
-    const [popularMovies, setPopularMovies] = useState<TV[]>([]);
+    const [popularTV, setPopularTV] = useState<TV[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingMore, setIsLoadingMore] = useState(false);
     const [fetchPage, setFetchPage] = useState(1);
@@ -33,7 +33,7 @@ export default function MoviesPage() {
             try {
                 const movies = searchQuery ? await GetSeachTVName(searchQuery, fetchPage) : await GetTVPopular(fetchPage);
 
-                setPopularMovies(prevMovies => {
+                setPopularTV(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
@@ -60,7 +60,7 @@ export default function MoviesPage() {
         const fetchMovies = async () => {
             try {
                 const movies = await GetSeachTVName(query, fetchPage);
-                setPopularMovies(prevMovies => {
+                setPopularTV(prevMovies => {
                     const newMovies = [...prevMovies, ...movies];
                     return removeDuplicates(newMovies);
                 });
@@ -82,7 +82,7 @@ export default function MoviesPage() {
     };
 
     // Filter movies based on search query
-    const filteredMovies = popularMovies.filter(movie =>
+    const filteredMovies = popularTV.filter(movie =>
         movie.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
