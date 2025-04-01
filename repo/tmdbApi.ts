@@ -129,8 +129,6 @@ export async function GetSeachTVName(query: string, page: number): Promise<TV[]>
     const queryString = query.split(" ").map((title) => `${title}`).join("+");
     const url = `${process.env.TMDB_API_URL}/search/tv?query=${queryString}&include_adult=false&language=en-US&page=${page}`
 
-
-    console.log("URL", url)
     try {
         const response = await fetch(`${process.env.TMDB_API_URL}/search/tv?query=${queryString}&include_adult=false&language=en-US&page=${page}`, {
             headers: {
@@ -197,20 +195,14 @@ export async function GetMovieMagnetLink(id: number): Promise<any> {
         const movieDetails = await GetMovieById(id);
         const query = `${movieDetails.title.replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
 
-        const params = new URLSearchParams({
-            query: query,
-        });
-
-        // Call your API endpoint
         const response = await fetch(
             `${process.env.BASE_URL}/api/torrents?query=${encodeURIComponent(query)}`,
-            { cache: 'no-store' }
+            { cache: 'default' }
         );
 
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
-            // Get the magnet for the first result
             const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
                 method: 'POST',
                 headers: {
@@ -231,26 +223,20 @@ export async function GetMovieMagnetLink(id: number): Promise<any> {
 
 export async function GetTVMagnetLink(id: number, season: number, episode: number): Promise<string> {
     try {
-        // Create a search query based on TV show details
-        const tvDetails = await GetTVById(id); // Assuming you have this function
+        const tvDetails = await GetTVById(id);
         const query = `${tvDetails.name.replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
 
-        const params = new URLSearchParams({
-            query: query,
-            category: 'TV',
-            limit: '8'
-        });
-
+        // Call your API endpoint
         const response = await fetch(
-            `${process.env.BASE_URL}/api/torrents?${params.toString()}`,
-            { cache: 'no-store' }
+            `${process.env.BASE_URL}/api/torrents?query=${encodeURIComponent(query)}`,
+            { cache: 'default' }
         );
 
         const data = await response.json();
 
         if (data.results && data.results.length > 0) {
             // Get the magnet for the first result
-            const magnetResponse = await fetch('/api/torrents', {
+            const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -258,10 +244,8 @@ export async function GetTVMagnetLink(id: number, season: number, episode: numbe
                 body: JSON.stringify({ torrent: data.results[0] }),
             });
 
-            //const magnetData = await magnetResponse.json();
-            //return magnetData.magnet || '';
-
-            return '';
+            const magnetData = await magnetResponse.json();
+            return magnetData.magnet || '';
         }
 
         return '';

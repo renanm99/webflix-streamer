@@ -27,7 +27,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                 category as string,
                 parseInt(limit as string) as number
             );
-            console.log('-------->results', results)
             if (results.length > 0) {
                 return res.status(200).json({ results });
             }
