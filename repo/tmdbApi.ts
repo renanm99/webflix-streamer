@@ -1,6 +1,7 @@
 "use server";
 
 import { Movie, TV, MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
+import { torrentApi } from "@/libs/torrentsearch"
 
 interface TMDBResponseMovie {
     "page": number,
@@ -104,7 +105,7 @@ export async function GetMovieById(id: number): Promise<MovieById> {
 export async function GetSeachMovieName(query: string, page: number): Promise<Movie[]> {
     const queryString = query.split(" ").map((title) => `${title}`).join("+");
     const url = `${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`
-    console.log("URL", url)
+    //console.log("URL", url)
     try {
         const response = await fetch(`${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`, {
             headers: {
@@ -170,9 +171,9 @@ export async function GetTVById(id: number): Promise<TVById> {
     }
 }
 
-export async function GetTVSeasonsDetailsById(id: number): Promise<TVSeasonDetails> {
+export async function GetTVSeasonsDetailsById(id: number, season: number): Promise<TVSeasonDetails> {
     try {
-        const response = await fetch(`${process.env.TMDB_API_URL}/tv/${id}/season/1?language=en-US`, {
+        const response = await fetch(`${process.env.TMDB_API_URL}/tv/${id}/season/${season}?language=en-US`, {
             headers: {
                 "authorization": `Bearer ${process.env.TMDB_API_KEY}`
             }
@@ -191,11 +192,37 @@ export async function GetTVSeasonsDetailsById(id: number): Promise<TVSeasonDetai
     }
 }
 
-export async function GetMovieMagnetLink(id: number): Promise<string> {
+export async function GetMovieMagnetLink(id: number): Promise<any> {
     try {
-        const data = "magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710";
+        const movieDetails = await GetMovieById(id);
+        const query = `${movieDetails.title.replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
 
-        return data;
+        const params = new URLSearchParams({
+            query: query,
+        });
+
+        // Call your API endpoint
+        const response = await fetch(
+            `${process.env.BASE_URL}/api/torrents?query=${encodeURIComponent(query)}`,
+            { cache: 'no-store' }
+        );
+
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            // Get the magnet for the first result
+            const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ torrent: data.results[0] }),
+            });
+
+            const magnetData = await magnetResponse.json();
+            return magnetData.magnet || '';
+        }
+        return '';
     } catch (error) {
         console.error("Failed to fetch movie:", error);
         return '';
@@ -204,12 +231,45 @@ export async function GetMovieMagnetLink(id: number): Promise<string> {
 
 export async function GetTVMagnetLink(id: number, season: number, episode: number): Promise<string> {
     try {
-        const data = "magnet:?xt=urn:btih:1a6a0d3c790e574aa6bfa347cfe77674feae9c75&dn=Sonic The Hedgehog 3 (2024) [720p] [BluRay] [YTS.MX]&tr=udp://tracker.opentrackr.org:1337&tr=udp://explodie.org:6969/announce&tr=udp://tracker.tiny-vps.com:6969/announce&tr=udp://open.stealth.si:80/announce&tr=udp://tracker.openbittorrent.com:6969/announce&tr=udp://tracker.dler.org:6969/announce&tr=udp://ipv4.tracker.harry.lu:80/announce&tr=udp://zephir.monocul.us:6969/announce&tr=http://open.acgtracker.com:1096/announce&tr=http://t.nyaatracker.com:80/announce&tr=udp://retracker.lanta-net.ru:2710/announce&tr=udp://tracker.uw0.xyz:6969/announce&tr=udp://opentracker.i2p.rocks:6969/announce&tr=udp://47.ip-51-68-199.eu:6969/announce&tr=udp://tracker.cyberia.is:6969/announce&tr=udp://uploads.gamecoast.net:6969/announce&tr=https://tracker.foreverpirates.co:443/announce&tr=udp://9.rarbg.to:2760&tr=udp://tracker.slowcheetah.org:14770&tr=udp://tracker.tallpenguin.org:15800&tr=udp://9.rarbg.to:2710/announce&tr=udp://opentor.org:2710";
+        // Create a search query based on TV show details
+        const tvDetails = await GetTVById(id); // Assuming you have this function
+        const query = `${tvDetails.name.replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
 
-        return data;
+        const params = new URLSearchParams({
+            query: query,
+            category: 'TV',
+            limit: '8'
+        });
+
+        const response = await fetch(
+            `${process.env.BASE_URL}/api/torrents?${params.toString()}`,
+            { cache: 'no-store' }
+        );
+
+        const data = await response.json();
+
+        if (data.results && data.results.length > 0) {
+            // Get the magnet for the first result
+            const magnetResponse = await fetch('/api/torrents', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ torrent: data.results[0] }),
+            });
+
+            //const magnetData = await magnetResponse.json();
+            //return magnetData.magnet || '';
+
+            return '';
+        }
+
+        return '';
     } catch (error) {
-        console.error("Failed to fetch movie:", error);
+        console.error("Failed to fetch TV magnet:", error);
         return '';
     }
 }
+
+
 

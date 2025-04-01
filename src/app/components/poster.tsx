@@ -15,11 +15,6 @@ const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year, contentType 
   const [imageSrc, setImageSrc] = useState<string>(urlPoster + imageUrl);
   const [imageError, setImageError] = useState<boolean>(false);
 
-  // Function to handle image loading errors
-  const handleImageError = () => {
-    setImageError(true);
-    setIsLoading(true);
-  };
 
   const handleImageLoad = () => {
     setIsLoading(false);
@@ -37,8 +32,11 @@ const Poster: React.FC<PosterProps> = ({ id, title, imageUrl, year, contentType 
                 width={imageError ? 50 : 500}
                 height={imageError ? 50 : 750}
                 className={`rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 ${imageError ? 'opacity-50' : ''}`}
-                onError={handleImageError}
                 onLoad={handleImageLoad}
+                loading="lazy"
+                placeholder="blur"
+                blurDataURL="/placeholder.png"
+                onError={(e) => (e.currentTarget.src = '/notfound.png')}
               />
             </div>
           </a>

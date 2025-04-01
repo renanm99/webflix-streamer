@@ -80,12 +80,13 @@ export default function Header({ onSearch }: { onSearch: (query: string) => void
                         </ul>
                     </nav>
 
+
                     <div className="flex items-center">
                         <div className="relative md:block">
                             <input
                                 type="search"
                                 placeholder="Search movies..."
-                                className="bg-gray-800 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-gray-700"
+                                className={`bg-gray-800 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-gray-700 ${isActive('/watch') ? "opacity-0" : ""}`}
                                 onChange={(e) => onSearch(e.target.value)}
                             />
                         </div>

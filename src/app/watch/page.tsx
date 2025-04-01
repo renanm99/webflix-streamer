@@ -3,20 +3,24 @@
 import { useEffect, useState, Suspense, useRef } from 'react'
 import Player from '../components/player'
 import Footer from '../components/footer'
+import Header from '../components/header'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMovieMagnetLink, GetTVMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
+import Loading from '../components/loading'
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [content, setContent] = useState<MovieById | TVById>({} as (MovieById | TVById));
     const [contentEpisodes, setContentEpisodes] = useState<TVSeasonDetails>({} as TVSeasonDetails);
-    const [selectedSeason, setSelectedSeason] = useState<number>(0);
-    const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
+    const [selectedSeason, setSelectedSeason] = useState<number>(1);
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
     const [contentMagnetLink, setcontentMagnetLink] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
+    const playerRef = useRef<HTMLDivElement>(null);
 
     // Fetch the movie/show data
     useEffect(() => {
@@ -29,12 +33,10 @@ function WatchPageContent() {
                     setcontentMagnetLink(await GetMovieMagnetLink(id))
                 } else {
                     setContent(await GetTVById(id))
-                    setContentEpisodes(await GetTVSeasonsDetailsById(id))
+                    setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
-            } finally {
-                setIsLoading(false);
             }
         };
 
@@ -42,19 +44,26 @@ function WatchPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
+        setIsLoading(false);
+        setIsLoadingEpisodes(false);
+    }, [content, contentEpisodes]);
+
+    useEffect(() => {
         const fetchMagnetLink = async () => {
             try {
-                setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
+                const contentType = searchParams?.get('content')?.toString();
+                console.log('------->contenttype', contentType)
+                if (contentType == 'tv') {
+                    setIsLoadingEpisodes(true)
+                    setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
+                    setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
+                }
             } catch (error) {
                 console.error('Error fetching content:', error);
-            } finally {
-                setIsLoading(false);
             }
         }
 
         fetchMagnetLink()
-
-        console.log("Magnet Link:", contentMagnetLink);
     }, [selectedSeason, selectedEpisode]);
 
     if (isLoading) {
@@ -86,8 +95,6 @@ function WatchPageContent() {
         );
     }
 
-    const playerRef = useRef<HTMLDivElement>(null);
-
     const scrollToPlayer = () => {
         if (playerRef.current) {
             playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -97,7 +104,6 @@ function WatchPageContent() {
     const handleSeasonClick = (seasonNumber: number) => {
         setSelectedSeason(seasonNumber);
         setSelectedEpisode(1);
-        scrollToPlayer();
     }
 
     const handleEpisodeClick = (episode_number: number) => {
@@ -106,7 +112,9 @@ function WatchPageContent() {
     }
 
     return (
+
         <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
+            <Header onSearch={() => { }} />
             <main className="container mx-auto px-4 py-8">
                 {/* Back Button */}
                 <button
@@ -128,6 +136,10 @@ function WatchPageContent() {
                             width={800}
                             height={450}
                             className="rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full"
+                            loading="lazy"
+                            placeholder="blur"
+                            blurDataURL="/placeholder.png"
+                            onError={(e) => (e.currentTarget.src = '/notfound.png')}
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent rounded-xl"></div>
                     </div>
@@ -137,7 +149,6 @@ function WatchPageContent() {
                     </p>
 
                     <div className="flex flex-wrap gap-4 text-gray-400 text-sm">
-                        {('title' in content) ? <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span> : <></>}
                         {!('title' in content) && content.number_of_seasons > 1 ? <span>Release Date: <strong>{content.first_air_date}</strong></span> : <></>}
                         {!('title' in content) && content.number_of_seasons > 1 ? <span>Last Season Release Date: <strong>{content.last_air_date}</strong></span> : !('title' in content) ? <span>Release Date: <strong>{content.last_air_date}</strong></span> : <></>}
                         {('title' in content) ? <span>Release Date: <strong>{content.release_date}</strong></span> : <></>}
@@ -145,7 +156,6 @@ function WatchPageContent() {
                         {('title' in content) ? <span>Runtime: <strong>{content.runtime ? `${content.runtime} min` : <>&quot;N/A&quot;</>}</strong></span> : <></>}
                         {('title' in content) ? <span>Budget: <strong>${content.budget.toLocaleString()}</strong></span> : <></>}
                         <span>Vote Average: <strong>{content.vote_average.toFixed(1)}</strong></span>
-                        <span>Vote Count: <strong>{content.vote_count}</strong></span>
                     </div>
                 </div>
 
@@ -160,6 +170,10 @@ function WatchPageContent() {
                                 width={100}
                                 height={150}
                                 className="rounded-md shadow-md"
+                                loading="lazy"
+                                placeholder="blur"
+                                blurDataURL="/placeholder.png"
+                                onError={(e) => (e.currentTarget.src = '/notfound.png')}
                             />
                             <div>
                                 <h3 className="text-lg font-bold">{content.belongs_to_collection.name}</h3>
@@ -201,6 +215,10 @@ function WatchPageContent() {
                                                 width={50}
                                                 height={50}
                                                 className="rounded-md"
+                                                loading="lazy"
+                                                placeholder="blur"
+                                                blurDataURL="/placeholder.png"
+                                                onError={(e) => (e.currentTarget.src = '/notfound.png')}
                                             />
                                         )}
                                         <span className="text-gray-300">{network.name}</span>
@@ -227,6 +245,10 @@ function WatchPageContent() {
                                                 width={50}
                                                 height={50}
                                                 className="rounded-md"
+                                                loading="lazy"
+                                                placeholder="blur"
+                                                blurDataURL="/placeholder.png"
+                                                onError={(e) => (e.currentTarget.src = '/notfound.png')}
                                             />
                                         )}
                                         <span className="text-gray-300">{company.name}</span>
@@ -273,6 +295,10 @@ function WatchPageContent() {
                                         width={150}
                                         height={225}
                                         className="rounded-md shadow-md"
+                                        loading="lazy"
+                                        placeholder="blur"
+                                        blurDataURL="/placeholder.png"
+                                        onError={(e) => (e.currentTarget.src = '/notfound.png')}
                                     />
                                     <span className="text-gray-300 mt-2">{season.name}</span>
                                 </button>
@@ -285,33 +311,38 @@ function WatchPageContent() {
                 {!('title' in content) && contentEpisodes.episodes && contentEpisodes.episodes.length > 0 && (
                     <div className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
-                        <div className="flex flex-col gap-6">
-                            {contentEpisodes.episodes.map((episode) => (
-                                <button
-                                    key={episode.id}
-                                    onClick={() => handleEpisodeClick(episode.episode_number)}
-                                    className="flex items-start gap-4 text-left bg-gray-800/10 hover:bg-gray-700/50 p-4 rounded-lg transition-colors"
-                                >
-                                    <Image
-                                        src={`${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${episode.still_path}`}
-                                        alt={episode.name}
-                                        width={150}
-                                        height={100}
-                                        className="rounded-md shadow-md"
-                                    />
-                                    <div>
-                                        <h3 className="text-lg font-bold">{episode.name}</h3>
-                                        <p className="text-gray-400 text-sm">Date: {episode.air_date}</p>
-                                        <p className="text-gray-300">{episode.overview}</p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
+                        {isLoadingEpisodes ? (<Loading text='Loading Season...' />) :
+                            (<div className="flex flex-col gap-6">
+                                {contentEpisodes.episodes.map((episode) => (
+                                    <button
+                                        key={episode.id}
+                                        onClick={() => handleEpisodeClick(episode.episode_number)}
+                                        className="flex items-start gap-4 text-left bg-gray-800/10 hover:bg-gray-700/50 p-4 rounded-lg transition-colors"
+                                    >
+                                        <Image
+                                            src={episode.still_path ? `${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${episode.still_path}` : '/notfound.png'}
+                                            alt={episode.name}
+                                            width={150}
+                                            height={100}
+                                            className="rounded-md shadow-md"
+                                            loading="lazy"
+                                            placeholder="blur"
+                                            blurDataURL="/placeholder.png"
+                                            onError={(e) => (e.currentTarget.src = '/notfound.png')}
+                                        />
+                                        <div>
+                                            <h3 className="text-lg font-bold">{episode.name}</h3>
+                                            <p className="text-gray-400 text-sm">Date: {episode.air_date}</p>
+                                            <p className="text-gray-300">{episode.overview}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>)}
                     </div>
                 )}
                 <div ref={playerRef} className="mb-10 w-full h-full">
                     <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
-                    {contentMagnetLink != '' && (
+                    {contentMagnetLink == '' ? <Loading text='Loading stream...' /> : (
                         <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
                             <Player magnetTorrent={contentMagnetLink} />
                         </div>)}
