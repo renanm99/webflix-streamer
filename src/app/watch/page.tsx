@@ -58,7 +58,6 @@ function WatchPageContent() {
             try {
                 const contentType = searchParams?.get('content')?.toString();
                 if (contentType == 'tv' && content.id) {
-                    setIsLoadingEpisodes(true)
                     setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
                     setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
                 }
@@ -111,6 +110,7 @@ function WatchPageContent() {
     }
 
     const handleEpisodeClick = (episode_number: number) => {
+        setIsLoadingEpisodes(true)
         setSelectedEpisode(episode_number);
         scrollToPlayer();
     }
