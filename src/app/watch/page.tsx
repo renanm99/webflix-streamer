@@ -105,12 +105,12 @@ function WatchPageContent() {
     };
 
     const handleSeasonClick = (seasonNumber: number) => {
+        setIsLoadingEpisodes(true)
         setSelectedSeason(seasonNumber);
         setSelectedEpisode(1);
     }
 
     const handleEpisodeClick = (episode_number: number) => {
-        setIsLoadingEpisodes(true)
         setSelectedEpisode(episode_number);
         scrollToPlayer();
     }
