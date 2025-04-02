@@ -44,8 +44,13 @@ function WatchPageContent() {
     }, [searchParams]);
 
     useEffect(() => {
-        setIsLoading(false);
-        setIsLoadingEpisodes(false);
+        if (content.id) {
+            setIsLoading(false);
+        }
+        if (contentEpisodes.id) {
+            setIsLoadingEpisodes(false);
+        }
+
     }, [content, contentEpisodes]);
 
     useEffect(() => {
@@ -76,7 +81,7 @@ function WatchPageContent() {
         );
     }
 
-    if ((!content || !content.id) && !isLoading) {
+    if ((!content.id) && !isLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
                 <div className="text-center p-8 bg-gray-800 rounded-lg shadow-lg max-w-md">
