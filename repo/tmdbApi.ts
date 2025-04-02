@@ -196,7 +196,7 @@ export async function GetMovieMagnetLink(id: number): Promise<any> {
         const query = `${movieDetails.title.replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
 
         const response = await fetch(
-            `${process.env.BASE_URL}/api/torrents?query=${encodeURIComponent(query)}`,
+            `${process.env.BASE_URL}/api/torrents?category=Movies&query=${encodeURIComponent(query)}`,
             { cache: 'default' }
         );
 
@@ -228,7 +228,7 @@ export async function GetTVMagnetLink(id: number, season: number, episode: numbe
 
         // Call your API endpoint
         const response = await fetch(
-            `${process.env.BASE_URL}/api/torrents?query=${encodeURIComponent(query)}`,
+            `${process.env.BASE_URL}/api/torrents?category=TV&query=${encodeURIComponent(query)}`,
             { cache: 'default' }
         );
 

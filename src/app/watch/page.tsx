@@ -317,8 +317,8 @@ function WatchPageContent() {
                                         key={episode.id}
                                         onClick={() => handleEpisodeClick(episode.episode_number)}
                                         className={`flex items-start gap-4 text-left ${episode.episode_number === selectedEpisode
-                                                ? 'bg-gray-700/50 border-l-4 border-blue-500'
-                                                : 'bg-gray-800/10'
+                                            ? 'bg-gray-700/50 border-l-4 border-blue-500'
+                                            : 'bg-gray-800/10'
                                             } hover:bg-gray-700/30 p-4 rounded-lg transition-colors`}
                                     >
                                         <Image
