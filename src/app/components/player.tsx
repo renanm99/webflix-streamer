@@ -10,15 +10,20 @@ interface PlayerProps {
 const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   const [streamUrl, setStreamUrl] = useState('/api/stream/' + magnetTorrent);
   const [isLoading, setIsLoading] = useState(true)
+  const [loadingState, setLoadingState] = useState('Loading stream...')
   const videoRef = useRef<HTMLVideoElement>(null)
 
+  /*
   useEffect(() => {
+    console.log('----------------->starting player')
     setStreamUrl('/api/stream/' + magnetTorrent);
   }, [magnetTorrent]);
+*/
 
   useEffect(() => {
-    if (!videoRef.current || !streamUrl) return
-
+    if (!videoRef.current || !streamUrl) {
+      return
+    }
     const video = videoRef.current
 
     const eventHandler = () => {
@@ -51,9 +56,9 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   }, [streamUrl, videoRef.current])
 
   return (
-    <div className="">
+    <div>
       {isLoading && (
-        <Loading text={"Loading content..."} />
+        <Loading text={loadingState} />
       )}
       {
         (
@@ -69,7 +74,15 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
               e.currentTarget.play()
                 .catch(err => console.log('Autoplay failed:', err));
               e.currentTarget.muted = false;
-            }} />
+            }}
+            onError={(e) => {
+              e.currentTarget.pause();
+              e.currentTarget.src = '';
+
+              setLoadingState('Error loading stream');
+            }}
+          />
+
         )
       }
     </div >

@@ -1,7 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+#public
+/public/screenshots
+
 # repo
 /repo/db.ts
+# src
+*.old
 
 # dependencies
 /node_modules

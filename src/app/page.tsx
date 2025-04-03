@@ -160,12 +160,12 @@ export default function ExplorePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white">
-      <Header onSearch={handleSearch} />
+      <Header onSearch={() => { }} />
 
       <main className="container mx-auto px-4 py-8">
         {/* Hero Section Carousel */}
         {featuredItems.length > 0 && !searchQuery && (
-          <div className="relative w-full h-[80vh] mb-12 rounded-xl overflow-hidden">
+          <div className="relative w-full h-[40vh] mb-12 rounded-xl overflow-hidden">
             {/* Carousel Items */}
             {featuredItems.map((item, index) => (
               <div
@@ -177,7 +177,7 @@ export default function ExplorePage() {
                   src={`${process.env.NEXT_PUBLIC_TMDB_BACKDROP_URL}${item.backdrop_path}`}
                   alt={('title' in item) ? item.title : item.name}
                   fill
-                  className="object-cover"
+                  className="object-cover object-top"
                   priority={index === currentSlide}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/70 to-transparent" />

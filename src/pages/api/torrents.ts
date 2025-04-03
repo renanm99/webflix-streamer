@@ -2,22 +2,23 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import TorrentSearchApi from 'torrent-search-api';
 
 const api = TorrentSearchApi;
-api.enablePublicProviders();
+api.getActiveProviders().forEach((provider) => api.enableProvider(provider.name));
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
-        const { query, category = 'All', limit = '4' } = req.query;
+        const { query, category = 'All', limit = '20' } = req.query;
         if (!query) {
             return res.status(400).json({ error: 'Query parameter is required' });
         }
         try {
+            api.getActiveProviders().forEach((provider) => api.enableProvider(provider.name));
             const results = await api.search(
                 query as string,
                 category as string,
                 parseInt(limit as string) as number
             );
 
-            if (results.length > 0) {
+            if (results.length > 0 && results[0].size != '0 B') {
                 return res.status(200).json({ results });
             }
 
@@ -26,9 +27,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             console.error("Torrent search failed:", error);
             return res.status(500).json({ error: 'Search failed' });
         }
-    }
-
-    else if (req.method === 'POST') {
+    } else if (req.method === 'POST') {
         const { torrent } = req.body;
 
         if (!torrent) {
@@ -37,14 +36,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         try {
             const magnet = await api.getMagnet(torrent);
-            return res.status(200).json({ magnet });
+            if (magnet && magnet != '') {
+                return res.status(200).json({ magnet });
+            }
+            return res.status(404).json({ error: 'Empty magnet link' });
         } catch (error) {
             console.error("Failed to get magnet link:", error);
             return res.status(500).json({ error: 'Failed to get magnet link' });
         }
-    }
-
-    else {
+    } else {
         res.setHeader('Allow', ['GET', 'POST']);
         return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }

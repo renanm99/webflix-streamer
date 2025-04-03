@@ -6,7 +6,7 @@ import Footer from '../components/footer'
 import Header from '../components/header'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMovieMagnetLink, GetTVMagnetLink } from "@/../repo/tmdbApi";
+import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 import Loading from '../components/loading'
 
@@ -30,7 +30,7 @@ function WatchPageContent() {
                 const id = parseInt(searchParams?.get('id') || '', 10);
                 if (contentType == 'movie') {
                     setContent(await GetMovieById(id))
-                    setcontentMagnetLink(await GetMovieMagnetLink(id))
+                    setcontentMagnetLink(await GetMagnetLink(id))
                 } else {
                     setContent(await GetTVById(id))
                     setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
@@ -59,7 +59,10 @@ function WatchPageContent() {
                 const contentType = searchParams?.get('content')?.toString();
                 if (contentType == 'tv' && content.id) {
                     setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
-                    setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
+                    const magnetlink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode)
+                    if (magnetlink != '') {
+                        setcontentMagnetLink(magnetlink);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
@@ -111,6 +114,7 @@ function WatchPageContent() {
     }
 
     const handleEpisodeClick = (episode_number: number) => {
+        setcontentMagnetLink('');
         setSelectedEpisode(episode_number);
         scrollToPlayer();
     }
@@ -139,8 +143,8 @@ function WatchPageContent() {
                             src={`${process.env.NEXT_PUBLIC_TMDB_BACKDROP_URL}${content.backdrop_path}`}
                             width={800}
                             height={450}
+                            priority
                             className="rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full"
-                            loading="lazy"
                             placeholder="blur"
                             blurDataURL="/placeholder.png"
                             onError={(e) => (e.currentTarget.src = '/notfound.png')}
@@ -347,7 +351,7 @@ function WatchPageContent() {
                 )}
                 <div ref={playerRef} className="mb-10 w-full h-full">
                     <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
-                    {contentMagnetLink == '' ? <Loading text='Loading stream...' /> : (
+                    {contentMagnetLink == '' ? <Loading text='Fetching content...' /> : (
                         <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
                             <Player magnetTorrent={contentMagnetLink} />
                         </div>)}

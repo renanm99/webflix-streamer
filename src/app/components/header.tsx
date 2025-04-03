@@ -17,7 +17,7 @@ export default function Header({ onSearch }: { onSearch: (query: string) => void
                     <div className="flex items-center">
                         <Link href="/" className="text-2xl font-bold text-white flex items-center">
                             <Image
-                                src="/ico512.png"
+                                src="/logo.png"
                                 alt="Logo"
                                 width={40}
                                 height={40}
@@ -85,8 +85,8 @@ export default function Header({ onSearch }: { onSearch: (query: string) => void
                         <div className="relative md:block">
                             <input
                                 type="search"
-                                placeholder="Search movies..."
-                                className={`bg-gray-800 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-gray-700 ${isActive('/watch') ? "opacity-0" : ""}`}
+                                placeholder={`${isActive('/movies') ? "Search movies..." : isActive('/tv') ? "Search TV shows..." : "Search favorites..."}`}
+                                className={`bg-gray-800 text-white px-4 py-2 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all border border-gray-700 ${isActive('/watch') || isActive('/') ? "opacity-0" : ""}`}
                                 onChange={(e) => onSearch(e.target.value)}
                             />
                         </div>

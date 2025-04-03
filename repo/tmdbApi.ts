@@ -1,7 +1,8 @@
-"use server";
+'use server'
 
 import { Movie, TV, MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 import { torrentApi } from "@/libs/torrentsearch"
+import { error } from "console";
 
 interface TMDBResponseMovie {
     "page": number,
@@ -190,17 +191,77 @@ export async function GetTVSeasonsDetailsById(id: number, season: number): Promi
     }
 }
 
-export async function GetMovieMagnetLink(id: number): Promise<any> {
+export async function GetMagnetLink(id: number, season?: number, episode?: number): Promise<string> {
     try {
-        const movieDetails = await GetMovieById(id);
-        const query = `${movieDetails.title.replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
+        let url = '';
+        if (season && episode) {
+            const tvDetails = await GetTVById(id);
+            const query = `${tvDetails.name.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
+            url = `${process.env.BASE_URL}/api/torrents?category=TV&query=${encodeURIComponent(query)}`;
+        } else {
 
-        const response = await fetch(
-            `${process.env.BASE_URL}/api/torrents?category=Movies&query=${encodeURIComponent(query)}`,
-            { cache: 'default' }
-        );
+            const movieDetails = await GetMovieById(id);
+            const query = `${movieDetails.title.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
+            url = `${process.env.BASE_URL}/api/torrents?category=Movies&query=${encodeURIComponent(query)}`;
+            console.log("URL", url)
+        }
+
+
+        let response = null
+        let tries = 10
+        do {
+            response = await fetch(url,
+                { method: 'GET', cache: 'default' }
+            );
+            tries--;
+        } while (response.status != 200 && tries > 0)
+
+        if (response.status != 200) {
+            console.log("Response", response.status)
+            throw Error('Could not find torrents');
+        }
 
         const data = await response.json();
+        data.results = data.results.sort((a: any, b: any) => {
+            // Parse size strings (e.g., "8.3 GB") to numeric values in MB
+            const sizeToMB = (sizeStr: string): number => {
+                const [value, unit] = sizeStr.split(' ');
+                const numValue = parseFloat(value);
+
+                switch (unit.toLowerCase()) {
+                    case 'kb': return numValue / 1024;
+                    case 'mb': return numValue;
+                    case 'gb': return numValue * 1024;
+                    case 'tb': return numValue * 1024 * 1024;
+                    default: return numValue;
+                }
+            };
+
+            // Calculate size in MB
+            const sizeA = sizeToMB(a.size);
+            const sizeB = sizeToMB(b.size);
+
+            // Check if seeds are extremely different (more than 10x difference)
+            // This ensures we don't pick a tiny file with almost no seeds
+            if (a.seeds > 0 && b.seeds > 0 && (a.seeds / b.seeds > 10 || b.seeds / a.seeds > 10)) {
+                return b.seeds - a.seeds; // Sort by seeds when there's a massive seed difference
+            }
+
+            // For files with similar-ish seed counts:
+            // First check if the size difference is significant (>20%)
+            const sizeDiffPercent = Math.abs(sizeA - sizeB) / Math.max(sizeA, sizeB);
+            if (sizeDiffPercent > 0.2) {
+                return sizeA - sizeB; // Prioritize smaller sizes when there's a significant difference
+            }
+
+            // For similar-sized files, use a weighted score that still prioritizes size
+            // The size is now squared to give it more weight
+            const scoreA = (a.seeds + 10) / Math.pow(sizeA / 100, 2);
+            const scoreB = (b.seeds + 10) / Math.pow(sizeB / 100, 2);
+
+            // Higher score is better
+            return scoreB - scoreA;
+        });
 
         if (data.results && data.results.length > 0) {
             const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
@@ -214,43 +275,9 @@ export async function GetMovieMagnetLink(id: number): Promise<any> {
             const magnetData = await magnetResponse.json();
             return magnetData.magnet || '';
         }
-        return '';
+        throw Error('404 No Files');
     } catch (error) {
-        console.error("Failed to fetch movie:", error);
-        return '';
-    }
-}
-
-export async function GetTVMagnetLink(id: number, season: number, episode: number): Promise<string> {
-    try {
-        const tvDetails = await GetTVById(id);
-        const query = `${tvDetails.name.replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
-
-        // Call your API endpoint
-        const response = await fetch(
-            `${process.env.BASE_URL}/api/torrents?category=TV&query=${encodeURIComponent(query)}`,
-            { cache: 'default' }
-        );
-
-        const data = await response.json();
-
-        if (data.results && data.results.length > 0) {
-            // Get the magnet for the first result
-            const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ torrent: data.results[0] }),
-            });
-
-            const magnetData = await magnetResponse.json();
-            return magnetData.magnet || '';
-        }
-
-        return '';
-    } catch (error) {
-        console.error("Failed to fetch TV magnet:", error);
+        console.error("Failed to fetch magnet:", error);
         return '';
     }
 }
