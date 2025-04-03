@@ -1,8 +1,6 @@
 'use server'
 
 import { Movie, TV, MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
-import { torrentApi } from "@/libs/torrentsearch"
-import { error } from "console";
 
 interface TMDBResponseMovie {
     "page": number,
@@ -106,7 +104,6 @@ export async function GetMovieById(id: number): Promise<MovieById> {
 export async function GetSeachMovieName(query: string, page: number): Promise<Movie[]> {
     const queryString = query.split(" ").map((title) => `${title}`).join("+");
     const url = `${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`
-    //console.log("URL", url)
     try {
         const response = await fetch(`${process.env.TMDB_API_URL}/search/movie?query=${queryString}&include_adult=false&language=en-US&page=${page}`, {
             headers: {
@@ -194,36 +191,45 @@ export async function GetTVSeasonsDetailsById(id: number, season: number): Promi
 export async function GetMagnetLink(id: number, season?: number, episode?: number): Promise<string> {
     try {
         let url = '';
+        let secondurl = '';
         if (season && episode) {
             const tvDetails = await GetTVById(id);
             const query = `${tvDetails.name.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
+            const secondquery = `${tvDetails.original_name.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} S${season.toString().padStart(2, '0')}E${episode.toString().padStart(2, '0')}`;
             url = `${process.env.BASE_URL}/api/torrents?category=TV&query=${encodeURIComponent(query)}`;
+            secondurl = `${process.env.BASE_URL}/api/torrents?category=TV&query=${encodeURIComponent(secondquery)}`;
         } else {
 
             const movieDetails = await GetMovieById(id);
             const query = `${movieDetails.title.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
+            const secondquery = `${movieDetails.original_title.replace(/[-:]/g, ' ').replace(/[^\w\s]/gi, '')} ${movieDetails.release_date.substring(0, 4)}`;
             url = `${process.env.BASE_URL}/api/torrents?category=Movies&query=${encodeURIComponent(query)}`;
-            console.log("URL", url)
+            secondurl = `${process.env.BASE_URL}/api/torrents?category=Movies&query=${encodeURIComponent(secondquery)}`;
         }
 
 
         let response = null
         let tries = 10
         do {
-            response = await fetch(url,
-                { method: 'GET', cache: 'default' }
-            );
+            if (tries % 2 == 0) {
+                response = await fetch(url,
+                    { method: 'GET', cache: 'default' }
+                );
+            } else {
+                response = await fetch(secondurl,
+                    { method: 'GET', cache: 'no-cache' }
+                );
+            }
             tries--;
         } while (response.status != 200 && tries > 0)
 
+
         if (response.status != 200) {
-            console.log("Response", response.status)
-            throw Error('Could not find torrents');
+            return '';
         }
 
         const data = await response.json();
         data.results = data.results.sort((a: any, b: any) => {
-            // Parse size strings (e.g., "8.3 GB") to numeric values in MB
             const sizeToMB = (sizeStr: string): number => {
                 const [value, unit] = sizeStr.split(' ');
                 const numValue = parseFloat(value);
@@ -263,19 +269,24 @@ export async function GetMagnetLink(id: number, season?: number, episode?: numbe
             return scoreB - scoreA;
         });
 
+        let magnettries = 0
         if (data.results && data.results.length > 0) {
-            const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ torrent: data.results[0] }),
-            });
+            let magnetResponse = null
+            do {
+                magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ torrent: data.results[magnettries] }),
+                });
+                magnettries++
+            } while (magnetResponse.status != 200 && tries < data.results.length)
 
             const magnetData = await magnetResponse.json();
-            return magnetData.magnet || '';
+            return magnetData.magnet;
         }
-        throw Error('404 No Files');
+        return '';
     } catch (error) {
         console.error("Failed to fetch magnet:", error);
         return '';

@@ -27,7 +27,7 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
   },
   "include": [
     "next-env.d.ts",
@@ -39,7 +39,7 @@
     "src/app/watch/watchpage.tsx.old",
     "src/app/watch/page copy.tsx.old",
     "src/app/watch/page copy 2.tsx.old",
-    "src/app/tvdetails/page.tsx.old"
+    "src/app/tvdetails/page.tsx.old",
   ],
   "exclude": [
     "node_modules",

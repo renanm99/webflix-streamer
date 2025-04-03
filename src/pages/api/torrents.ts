@@ -1,8 +1,8 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import TorrentSearchApi from 'torrent-search-api';
 
-const api = TorrentSearchApi;
-api.getActiveProviders().forEach((provider) => api.enableProvider(provider.name));
+//const api = TorrentSearchApi;
+TorrentSearchApi.enablePublicProviders();
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
     if (req.method === 'GET') {
@@ -11,8 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(400).json({ error: 'Query parameter is required' });
         }
         try {
-            api.getActiveProviders().forEach((provider) => api.enableProvider(provider.name));
-            const results = await api.search(
+            const results = await TorrentSearchApi.search(
                 query as string,
                 category as string,
                 parseInt(limit as string) as number
@@ -35,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         try {
-            const magnet = await api.getMagnet(torrent);
+            const magnet = await TorrentSearchApi.getMagnet(torrent);
             if (magnet && magnet != '') {
                 return res.status(200).json({ magnet });
             }

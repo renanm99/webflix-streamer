@@ -17,22 +17,22 @@ A web-based streaming application built with Next.js that allows users to browse
 ## Screenshots
 
 <p align="center">
-  <img src="./public/screenshots/home.png" alt="WebFlix Home Page" width="800">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/home.png" alt="WebFlix Home Page" width="800">
 </p>
 
 ### Showcase
 
 | Feature | Screenshot |
 |---------|------------|
-| Movie Browsing | <img src="./public/screenshots/browse.png" alt="Browse Movies" width="400"> |
-| TV Show Episodes | <img src="./public/screenshots/episodes.png" alt="Episode Selection" width="400"> |
-| Streaming Player | <img src="./public/screenshots/player.png" alt="Streaming Player" width="400"> |
+| Movie Browsing | <img src="https://webflix.renanmachado.dev.br/screenshots/browse.png" alt="Browse Movies" width="400"> |
+| TV Show Episodes | <img src="https://webflix.renanmachado.dev.br/screenshots/episodes.png" alt="Episode Selection" width="400"> |
+| Streaming Player | <img src="https://webflix.renanmachado.dev.br/screenshots/player.png" alt="Streaming Player" width="400"> |
 
 ### Responsive Design
 
 <div align="center">
-  <img src="./public/screenshots/mobile.png" alt="Mobile View" width="250">
-  <img src="./public/screenshots/tablet.png" alt="Tablet View" width="400">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/mobile.png" alt="Mobile View" width="250">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/tablet.png" alt="Tablet View" width="400">
 </div>
 
 ## Tech Stack

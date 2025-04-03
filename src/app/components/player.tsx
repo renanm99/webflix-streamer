@@ -1,7 +1,7 @@
+'use client'
 import React from 'react';
 import { useEffect, useRef, useState } from 'react'
 import Loading from '@/app/components/loading';
-//import { repo } from '../../../repo/db'
 
 interface PlayerProps {
   magnetTorrent: string;
@@ -11,19 +11,35 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   const [streamUrl, setStreamUrl] = useState('/api/stream/' + magnetTorrent);
   const [isLoading, setIsLoading] = useState(true)
   const [loadingState, setLoadingState] = useState('Loading stream...')
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null);
 
-  /*
-  useEffect(() => {
-    console.log('----------------->starting player')
-    setStreamUrl('/api/stream/' + magnetTorrent);
-  }, [magnetTorrent]);
-*/
+  const [subtitles, setSubtitles] = useState([
+    { label: "Off", value: "off", default: true },
+    {
+      label: "English",
+      value: "en",
+      src: "/subtitles/english.vtt",
+      language: "en"
+    },
+    {
+      label: "Spanish",
+      value: "es",
+      src: "/subtitles/spanish.vtt",
+      language: "es"
+    }
+  ]);
+
 
   useEffect(() => {
     if (!videoRef.current || !streamUrl) {
+      if (streamUrl == '/api/stream/' + '') {
+        setLoadingState('No torrents to stream')
+      } else {
+        setLoadingState('Error loading stream')
+      }
       return
     }
+
     const video = videoRef.current
 
     const eventHandler = () => {
@@ -53,7 +69,7 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
       video.removeEventListener('waiting', () => setIsLoading(true))
       video.removeEventListener('playing', () => setIsLoading(false))
     }
-  }, [streamUrl, videoRef.current])
+  }, [streamUrl])
 
   return (
     <div>

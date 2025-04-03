@@ -4,8 +4,8 @@ import { Inter } from 'next/font/google'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Web Torrent Streamer',
-  description: 'Web torrent streamer created with nextjs and webtorrent'
+  title: 'WebFlix Streamer',
+  description: 'a Web torrent streamer created with nextjs'
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

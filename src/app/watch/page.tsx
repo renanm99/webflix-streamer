@@ -39,7 +39,6 @@ function WatchPageContent() {
                 console.error('Error fetching content:', error);
             }
         };
-
         fetchMovie();
     }, [searchParams]);
 
@@ -351,10 +350,12 @@ function WatchPageContent() {
                 )}
                 <div ref={playerRef} className="mb-10 w-full h-full">
                     <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+
                     {contentMagnetLink == '' ? <Loading text='Fetching content...' /> : (
                         <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
                             <Player magnetTorrent={contentMagnetLink} />
-                        </div>)}
+                        </div>
+                    )}
                 </div>
 
                 <Footer />
