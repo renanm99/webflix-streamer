@@ -1,9 +1,8 @@
-'use client'
-import { client } from '@/libs/webtorret'
+'use server'
+import client from '@/libs/webtorret'
 import { NextApiRequest, NextApiResponse } from 'next'
 import type { Torrent } from 'webtorrent'
 import { isMediaFile, mediaType, torrentIdFromQuery } from '@/utils/helpers'
-import fs from 'fs'
 
 export const config = {
   api: {
@@ -11,17 +10,23 @@ export const config = {
   }
 }
 
+client.setMaxListeners(1000)
+
 const CHUNK_SIZE = 10 ** 6 // 1MB
 
+
+
 const streamTorrent = (torrent: Torrent, req: NextApiRequest, res: NextApiResponse) => {
+
   const file = torrent?.files?.find((file) => isMediaFile(file?.name))
   if (!file) {
-    client.remove(torrent)
-    torrent.destroy()
-    torrent.files.forEach((file) => {
-      fs.unlinkSync(file.path)
-    })
-    return res.status(405).json({ error: 'No media file found' })
+    /*
+      torrent.destroy()
+      torrent.files.forEach((file) => {
+        fs.unlinkSync(file.path)
+      })
+        */
+    return res.status(500).json({ error: 'No media file found' })
   }
 
   const fileSize = file.length
@@ -61,52 +66,71 @@ const streamTorrent = (torrent: Torrent, req: NextApiRequest, res: NextApiRespon
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  //removeAllTorrents()
+  if (req.query.xt == 'urn:btih:0000000000000000000000000000000000000000') {
+    return res.status(404).json({ error: 'Torrent does not exist' })
+  }
+
   const torrentId = torrentIdFromQuery(req.query)
+
   if (!torrentId) {
     return res.status(400).json({ error: 'Incorrect magnet URI' })
   }
 
   const torrentAlreadyAdded = client.get(torrentId)
-  if (torrentAlreadyAdded) {
 
+  if (torrentAlreadyAdded && torrentAlreadyAdded.files.length == 0) {
+    client.remove(torrentAlreadyAdded)
+  } else if (torrentAlreadyAdded && torrentAlreadyAdded.files.length > 0) {
     return streamTorrent(torrentAlreadyAdded, req, res)
   }
 
-  const torrent = await new Promise<Torrent>((resolve) => {
-    client.add(
-      torrentId,
-      {
-        //path: path.resolve(process.cwd(), 'torrents'),
-        destroyStoreOnDestroy: true,
-        strategy: 'sequential',
-      },
-      (torrent) => {
-        resolve(torrent)
+  try {
+    // Add timeout to the promise
+    const torrentPromise = new Promise<Torrent>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        reject('Torrent initialization timed out');
+      }, 30 * 1000); // 30 second timeout
+
+      client.add(
+        torrentId,
+        {
+          destroyStoreOnDestroy: true,
+          strategy: 'sequential',
+        },
+        (torrent) => {
+          clearTimeout(timeoutId);
+          resolve(torrent);
+        }
+      );
+    });
+
+    const torrent = await torrentPromise;
+
+    if (!torrent) {
+      return res.status(404).json({ error: 'Error adding torrent' });
+    }
+
+    let torrentIsReady = false
+    let count = 0
+    while (!torrentIsReady) {
+      if (count > 60) {
+        break
       }
-    )
-  })
-
-  if (!torrent) {
-    return res.status(402).json({ error: 'Error adding torrent' })
-  }
-
-  let torrentIsReady = false
-  let count = 0
-  while (!torrentIsReady) {
-    if (count > 60) {
-      break
+      if (torrent.files.length > 0 && torrent.ready && torrent.files.find((file) => isMediaFile(file.name))) {
+        torrentIsReady = true
+        continue
+      }
+      await new Promise((r) => setTimeout(r, 1000))
+      count++
     }
-    if (torrent.files.length > 0 && torrent.ready && torrent.files.find((file) => isMediaFile(file.name))) {
-      torrentIsReady = true
+
+    if (!torrentIsReady) {
+      return res.status(400).json({ error: 'Torrent not ready for streaming' })
     }
-    await new Promise((r) => setTimeout(r, 1000))
-    count++
-  }
 
-  if (!torrentIsReady) {
-    return res.status(400).json({ error: 'Torrent not ready for streaming' })
+    return streamTorrent(torrent, req, res)
+  } catch (error) {
+    console.error('Error in handler:', error)
+    return res.status(500).json({ error: 'Internal server error' + error })
   }
-
-  return streamTorrent(torrent, req, res)
 }

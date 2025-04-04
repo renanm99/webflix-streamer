@@ -6,21 +6,23 @@ import Footer from '../components/footer'
 import Header from '../components/header'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMovieMagnetLink, GetTVMagnetLink } from "@/../repo/tmdbApi";
+import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 import Loading from '../components/loading'
+import { time } from 'console'
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [content, setContent] = useState<MovieById | TVById>({} as (MovieById | TVById));
     const [contentEpisodes, setContentEpisodes] = useState<TVSeasonDetails>({} as TVSeasonDetails);
-    const [selectedSeason, setSelectedSeason] = useState<number>(1);
-    const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
+    const [selectedSeason, setSelectedSeason] = useState<number>(0);
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
     const [contentMagnetLink, setcontentMagnetLink] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
     const playerRef = useRef<HTMLDivElement>(null);
+    const EpisodesRef = useRef<HTMLDivElement>(null);
 
     // Fetch the movie/show data
     useEffect(() => {
@@ -30,16 +32,15 @@ function WatchPageContent() {
                 const id = parseInt(searchParams?.get('id') || '', 10);
                 if (contentType == 'movie') {
                     setContent(await GetMovieById(id))
-                    setcontentMagnetLink(await GetMovieMagnetLink(id))
+                    setcontentMagnetLink(await GetMagnetLink(id))
                 } else {
                     setContent(await GetTVById(id))
-                    setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
+                    //setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
             }
         };
-
         fetchMovie();
     }, [searchParams]);
 
@@ -57,9 +58,14 @@ function WatchPageContent() {
         const fetchMagnetLink = async () => {
             try {
                 const contentType = searchParams?.get('content')?.toString();
-                if (contentType == 'tv' && content.id) {
+                if (contentType == 'tv' && content.id && (selectedSeason > 0)) {
                     setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
-                    setcontentMagnetLink(await GetTVMagnetLink(content.id, selectedSeason, selectedEpisode));
+                    if (selectedSeason > 0 && selectedEpisode > 0) {
+                        const magnetlink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode)
+                        if (magnetlink != '') {
+                            setcontentMagnetLink(magnetlink);
+                        }
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
@@ -98,19 +104,31 @@ function WatchPageContent() {
         );
     }
 
+    const scrollToEpisodes = () => {
+        setTimeout(() => {
+            if (EpisodesRef.current) {
+                EpisodesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200)
+    };
+
     const scrollToPlayer = () => {
-        if (playerRef.current) {
-            playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        setTimeout(() => {
+            if (playerRef.current) {
+                playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200)
     };
 
     const handleSeasonClick = (seasonNumber: number) => {
         setIsLoadingEpisodes(true)
         setSelectedSeason(seasonNumber);
-        setSelectedEpisode(1);
+        setSelectedEpisode(0);
+        scrollToEpisodes();
     }
 
     const handleEpisodeClick = (episode_number: number) => {
+        setcontentMagnetLink('');
         setSelectedEpisode(episode_number);
         scrollToPlayer();
     }
@@ -139,8 +157,8 @@ function WatchPageContent() {
                             src={`${process.env.NEXT_PUBLIC_TMDB_BACKDROP_URL}${content.backdrop_path}`}
                             width={800}
                             height={450}
+                            priority
                             className="rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300 w-full"
-                            loading="lazy"
                             placeholder="blur"
                             blurDataURL="/placeholder.png"
                             onError={(e) => (e.currentTarget.src = '/notfound.png')}
@@ -312,6 +330,7 @@ function WatchPageContent() {
                 )}
 
                 {/* Episodes */}
+                <div ref={EpisodesRef} className="h-1"></div>
                 {!('title' in content) && contentEpisodes.episodes && contentEpisodes.episodes.length > 0 && (
                     <div className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
@@ -345,15 +364,26 @@ function WatchPageContent() {
                             </div>)}
                     </div>
                 )}
-                <div ref={playerRef} className="mb-10 w-full h-full">
-                    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
-                    {contentMagnetLink == '' ? <Loading text='Loading stream...' /> : (
-                        <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                            <Player magnetTorrent={contentMagnetLink} />
-                        </div>)}
+
+                <div className="mb-10 w-full h-full">
+                    {(!('title' in content) && selectedEpisode == 0) ? <></> : (('title' in content && new Date(content.release_date) <= new Date()) ||
+                        (!('title' in content) && new Date(content.first_air_date) <= new Date())) && (
+                            <div className="w-full h-full">
+                                <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+
+                                {contentMagnetLink === '' ? (
+                                    <Loading text="Fetching content..." />
+                                ) : (
+                                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
+                                        <Player magnetTorrent={contentMagnetLink} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
                 </div>
 
                 <Footer />
+                <div ref={playerRef} className="h-1" />
             </main >
         </div >
     );

@@ -1,4 +1,4 @@
-import { client } from '@/libs/webtorret'
+import client from '@/libs/webtorret'
 import { torrentIdFromQuery } from '@/utils/helpers'
 import { NextApiRequest, NextApiResponse } from 'next'
 

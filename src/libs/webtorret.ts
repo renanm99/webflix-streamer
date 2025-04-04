@@ -1,4 +1,6 @@
 import WebTorrent from 'webtorrent'
 
-export const client = new WebTorrent({ maxConns: 100, })
-client.setMaxListeners(100)
+const client = new WebTorrent({ maxConns: 100, })
+client.setMaxListeners(1000)
+
+export default client

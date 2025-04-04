@@ -6,11 +6,34 @@ A web-based streaming application built with Next.js that allows users to browse
 
 - 🎬 Stream movies and TV shows directly in your browser
 - 📺 Support for TV series with multiple seasons and episodes
-- 🔍 Search functionality to easily find content
+- 🔍 Search functionality to easily# WebFlix Streamer
 - 🎯 Responsive design that works on desktop and mobile devices
 - 🖼️ Beautiful UI with movie posters and backdrop images
-- 🔄 Real-time streaming with adaptive quality
+- 🔄 Real-time streaming
 - 📱 Mobile-friendly interface
+
+A web-based streaming application built with Next.js that allows users to browse and stream movies and TV shows using WebTorrent technology.
+
+## Screenshots
+
+<p align="center">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/home.png" alt="WebFlix Home Page" width="800">
+</p>
+
+### Showcase
+
+| Feature | Screenshot |
+|---------|------------|
+| Movie Browsing | <img src="https://webflix.renanmachado.dev.br/screenshots/browse.png" alt="Browse Movies" width="400"> |
+| TV Show Episodes | <img src="https://webflix.renanmachado.dev.br/screenshots/episodes.png" alt="Episode Selection" width="400"> |
+| Streaming Player | <img src="https://webflix.renanmachado.dev.br/screenshots/player.png" alt="Streaming Player" width="400"> |
+
+### Responsive Design
+
+<div align="center">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/mobile.png" alt="Mobile View" width="250">
+  <img src="https://webflix.renanmachado.dev.br/screenshots/tablet.png" alt="Tablet View" width="400">
+</div>
 
 ## Tech Stack
 
@@ -18,7 +41,6 @@ A web-based streaming application built with Next.js that allows users to browse
 - **UI**: React 19
 - **Styling**: Tailwind CSS
 - **Streaming**: WebTorrent
-- **Package Manager**: pnpm
 
 ## Getting Started
 
@@ -66,17 +88,18 @@ Linux -> Install Node.js (v22.14) and npm (v10.9.2):
    npm install
    ```
 
-3. Create an `.env` file in the root directory with the following variables: (I'm using The Movie Database to retrive movie posters)
-   ```
-   NEXT_PUBLIC_TMDB_API_URL_IMAGE=https://image.tmdb.org/t/p/w500
-   ```
+3. The key for The Movie Database API is not included on this repo, you'll need to grab your own on.
+   See on [The Movie Database API](https://developer.themoviedb.org/reference/intro/getting-started)
 
-4. Start the development server:
+4. Fill the `.env` file in the root directory with your api key and url environment.
+
+5. Start the development server:
    ```bash
    npm dev
    ```
 
-5. Open [http://localhost:PORT](http://localhost:PORT) with your browser to see the application.
+6. Open [http://localhost:PORT](http://localhost:PORT) with your browser to see the application.
+
 
 ## Project Structure
 
@@ -85,11 +108,16 @@ webflix-streamer/
 ├── src/
 │   ├── app/             # Next.js app directory
 │   │   ├── components/  # React components
+│   │   ├── movie/       # Movies Page
+│   │   ├── tv/          # Tv Shows Page
 │   │   ├── watch/       # Watch page for streaming content
 │   │   └── page.tsx     # Home page
-│   ├── api/             # API routes
-│   └── styles/          # CSS styles
-├── repo/                # Content repository (not included in git)
+│   └── pages/             
+│       └── api/         # API Routes
+├── repo/                # Content repository
+│   ├── models/          
+│   │    └── movie.ts    #Content models 
+│   └── tmdbApi.ts       #The Movie Database API calls
 ├── public/              # Static assets
 ├── .env                 # Environment variables
 └── package.json         # Project dependencies
@@ -97,16 +125,9 @@ webflix-streamer/
 
 ## Important Notes
 
-- The `repo` directory is not included in the repository. it can be customized with your own private media database.
 - This project uses WebTorrent for streaming, which means it streams from torrent sources.
 - Please ensure you comply with copyright laws in your jurisdiction when using this application.
 
-## Development
-
-- Run development server: `pnpm dev`
-- Build for production: `pnpm build`
-- Start production server: `pnpm start`
-- Lint code: `pnpm lint`
 
 ## Contributing
 

@@ -1,7 +1,7 @@
+'use client'
 import React from 'react';
 import { useEffect, useRef, useState } from 'react'
 import Loading from '@/app/components/loading';
-//import { repo } from '../../../repo/db'
 
 interface PlayerProps {
   magnetTorrent: string;
@@ -10,14 +10,35 @@ interface PlayerProps {
 const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
   const [streamUrl, setStreamUrl] = useState('/api/stream/' + magnetTorrent);
   const [isLoading, setIsLoading] = useState(true)
-  const videoRef = useRef<HTMLVideoElement>(null)
+  const [loadingState, setLoadingState] = useState('Loading stream...')
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const [subtitles, setSubtitles] = useState([
+    { label: "Off", value: "off", default: true },
+    {
+      label: "English",
+      value: "en",
+      src: "/subtitles/english.vtt",
+      language: "en"
+    },
+    {
+      label: "Spanish",
+      value: "es",
+      src: "/subtitles/spanish.vtt",
+      language: "es"
+    }
+  ]);
+
 
   useEffect(() => {
-    setStreamUrl('/api/stream/' + magnetTorrent);
-  }, [magnetTorrent]);
-
-  useEffect(() => {
-    if (!videoRef.current || !streamUrl) return
+    if (!videoRef.current || !streamUrl) {
+      if (streamUrl == '/api/stream/' + '') {
+        setLoadingState('No torrents to stream')
+      } else {
+        setLoadingState('Error loading stream')
+      }
+      return
+    }
 
     const video = videoRef.current
 
@@ -48,12 +69,12 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
       video.removeEventListener('waiting', () => setIsLoading(true))
       video.removeEventListener('playing', () => setIsLoading(false))
     }
-  }, [streamUrl, videoRef.current])
+  }, [streamUrl])
 
   return (
-    <div className="">
+    <div>
       {isLoading && (
-        <Loading text={"Loading content..."} />
+        <Loading text={loadingState} />
       )}
       {
         (
@@ -69,7 +90,15 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
               e.currentTarget.play()
                 .catch(err => console.log('Autoplay failed:', err));
               e.currentTarget.muted = false;
-            }} />
+            }}
+            onError={(e) => {
+              e.currentTarget.pause();
+              e.currentTarget.src = '';
+
+              setLoadingState('Error loading stream');
+            }}
+          />
+
         )
       }
     </div >
