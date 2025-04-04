@@ -9,14 +9,15 @@ import Image from 'next/image'
 import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 import Loading from '../components/loading'
+import { time } from 'console'
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const [content, setContent] = useState<MovieById | TVById>({} as (MovieById | TVById));
     const [contentEpisodes, setContentEpisodes] = useState<TVSeasonDetails>({} as TVSeasonDetails);
-    const [selectedSeason, setSelectedSeason] = useState<number>(1);
-    const [selectedEpisode, setSelectedEpisode] = useState<number>(1);
+    const [selectedSeason, setSelectedSeason] = useState<number>(0);
+    const [selectedEpisode, setSelectedEpisode] = useState<number>(0);
     const [contentMagnetLink, setcontentMagnetLink] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
@@ -33,7 +34,7 @@ function WatchPageContent() {
                     setcontentMagnetLink(await GetMagnetLink(id))
                 } else {
                     setContent(await GetTVById(id))
-                    setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
+                    //setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
@@ -56,11 +57,13 @@ function WatchPageContent() {
         const fetchMagnetLink = async () => {
             try {
                 const contentType = searchParams?.get('content')?.toString();
-                if (contentType == 'tv' && content.id) {
+                if (contentType == 'tv' && content.id && (selectedSeason > 0)) {
                     setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
-                    const magnetlink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode)
-                    if (magnetlink != '') {
-                        setcontentMagnetLink(magnetlink);
+                    if (selectedSeason > 0 && selectedEpisode > 0) {
+                        const magnetlink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode)
+                        if (magnetlink != '') {
+                            setcontentMagnetLink(magnetlink);
+                        }
                     }
                 }
             } catch (error) {
@@ -109,7 +112,7 @@ function WatchPageContent() {
     const handleSeasonClick = (seasonNumber: number) => {
         setIsLoadingEpisodes(true)
         setSelectedSeason(seasonNumber);
-        setSelectedEpisode(1);
+        setSelectedEpisode(0);
     }
 
     const handleEpisodeClick = (episode_number: number) => {
@@ -348,15 +351,21 @@ function WatchPageContent() {
                             </div>)}
                     </div>
                 )}
-                <div ref={playerRef} className="mb-10 w-full h-full">
-                    <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
 
-                    {contentMagnetLink == '' ? <Loading text='Fetching content...' /> : (
-                        <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                            <Player magnetTorrent={contentMagnetLink} />
+                {(!('title' in content) && selectedSeason == 0 && selectedEpisode == 0) ? <></> : (('title' in content && new Date(content.release_date) <= new Date()) ||
+                    (!('title' in content) && new Date(content.first_air_date) <= new Date())) && (
+                        <div ref={playerRef} className="mb-10 w-full h-full">
+                            <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+
+                            {contentMagnetLink === '' ? (
+                                <Loading text="Fetching content..." />
+                            ) : (
+                                <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
+                                    <Player magnetTorrent={contentMagnetLink} />
+                                </div>
+                            )}
                         </div>
                     )}
-                </div>
 
                 <Footer />
             </main >

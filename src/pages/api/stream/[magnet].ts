@@ -10,6 +10,8 @@ export const config = {
   }
 }
 
+client.setMaxListeners(1000)
+
 const CHUNK_SIZE = 10 ** 6 // 1MB
 
 
@@ -82,13 +84,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return streamTorrent(torrentAlreadyAdded, req, res)
   }
 
-
-
   try {
     // Add timeout to the promise
     const torrentPromise = new Promise<Torrent>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
-        return reject('Torrent initialization timed out');
+        reject('Torrent initialization timed out');
       }, 30 * 1000); // 30 second timeout
 
       client.add(
@@ -131,6 +131,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return streamTorrent(torrent, req, res)
   } catch (error) {
     console.error('Error in handler:', error)
-    return res.status(500).json({ error: 'Internal server error' })
+    return res.status(500).json({ error: 'Internal server error' + error })
   }
 }
