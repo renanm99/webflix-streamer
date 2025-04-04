@@ -22,6 +22,7 @@ function WatchPageContent() {
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
     const playerRef = useRef<HTMLDivElement>(null);
+    const EpisodesRef = useRef<HTMLDivElement>(null);
 
     // Fetch the movie/show data
     useEffect(() => {
@@ -103,16 +104,27 @@ function WatchPageContent() {
         );
     }
 
+    const scrollToEpisodes = () => {
+        setTimeout(() => {
+            if (EpisodesRef.current) {
+                EpisodesRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200)
+    };
+
     const scrollToPlayer = () => {
-        if (playerRef.current) {
-            playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        setTimeout(() => {
+            if (playerRef.current) {
+                playerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 200)
     };
 
     const handleSeasonClick = (seasonNumber: number) => {
         setIsLoadingEpisodes(true)
         setSelectedSeason(seasonNumber);
         setSelectedEpisode(0);
+        scrollToEpisodes();
     }
 
     const handleEpisodeClick = (episode_number: number) => {
@@ -318,6 +330,7 @@ function WatchPageContent() {
                 )}
 
                 {/* Episodes */}
+                <div ref={EpisodesRef} className="h-1"></div>
                 {!('title' in content) && contentEpisodes.episodes && contentEpisodes.episodes.length > 0 && (
                     <div className="mb-8">
                         <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
@@ -352,22 +365,25 @@ function WatchPageContent() {
                     </div>
                 )}
 
-                {(!('title' in content) && selectedSeason == 0 && selectedEpisode == 0) ? <></> : (('title' in content && new Date(content.release_date) <= new Date()) ||
-                    (!('title' in content) && new Date(content.first_air_date) <= new Date())) && (
-                        <div ref={playerRef} className="mb-10 w-full h-full">
-                            <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+                <div className="mb-10 w-full h-full">
+                    {(!('title' in content) && selectedEpisode == 0) ? <></> : (('title' in content && new Date(content.release_date) <= new Date()) ||
+                        (!('title' in content) && new Date(content.first_air_date) <= new Date())) && (
+                            <div className="w-full h-full">
+                                <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
 
-                            {contentMagnetLink === '' ? (
-                                <Loading text="Fetching content..." />
-                            ) : (
-                                <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                                    <Player magnetTorrent={contentMagnetLink} />
-                                </div>
-                            )}
-                        </div>
-                    )}
+                                {contentMagnetLink === '' ? (
+                                    <Loading text="Fetching content..." />
+                                ) : (
+                                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
+                                        <Player magnetTorrent={contentMagnetLink} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                </div>
 
                 <Footer />
+                <div ref={playerRef} className="h-1" />
             </main >
         </div >
     );

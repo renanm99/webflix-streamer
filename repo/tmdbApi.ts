@@ -227,7 +227,7 @@ export async function GetMagnetLink(id: number, season?: number, episode?: numbe
 
 
         let response = null
-        let tries = 10
+        let tries = 3
         do {
             if (tries % 3 == 0) {
                 response = await fetch(url,
