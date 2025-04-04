@@ -289,7 +289,6 @@ export async function GetMagnetLink(id: number, season?: number, episode?: numbe
 
 
 async function magnetLink(data: any, magnettries: number, signal: AbortSignal): Promise<{ magnet: string, status: number }> {
-    console.log(process.env.)
     try {
         const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
             method: 'POST',
