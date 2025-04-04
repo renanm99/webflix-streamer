@@ -1,7 +1,7 @@
 'use server'
 
 import { Movie, TV, MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
-import { parse } from "path";
+import crypto from 'crypto';
 
 interface TMDBResponseMovie {
     "page": number,
@@ -14,6 +14,23 @@ interface TMDBResponseTV {
     "results": TV[],
     "total_pages": number,
     "total_results": number
+}
+// Keep track of ongoing requests
+let currentAbortController: AbortController | null = null;
+// Cache for magnet links
+const globalForMagnetCache = global as unknown as { magnetCache: Map<string, { magnet: string, status: number }> };
+
+if (!globalForMagnetCache.magnetCache) {
+    globalForMagnetCache.magnetCache = new Map();
+}
+
+const magnetCache = globalForMagnetCache.magnetCache;
+const CACHE_TTL = 3600 * 1000; // 1 hour
+
+function generateHash(data: { title: string; time: string; seeds: number; peers: number; size: string; desc: string; provider: string }): string {
+    const hash = crypto.createHash('sha256'); // Use SHA-256 hashing algorithm
+    hash.update(JSON.stringify(data)); // Convert the object to a string and hash it
+    return hash.digest('hex'); // Return the hash as a hexadecimal string
 }
 
 
@@ -189,9 +206,6 @@ export async function GetTVSeasonsDetailsById(id: number, season: number): Promi
     }
 }
 
-// Keep track of ongoing requests
-let currentAbortController: AbortController | null = null;
-
 export async function GetMagnetLink(id: number, season?: number, episode?: number): Promise<string> {
     try {
         // Cancel any previous requests
@@ -231,15 +245,34 @@ export async function GetMagnetLink(id: number, season?: number, episode?: numbe
         do {
             if (tries % 3 == 0) {
                 response = await fetch(url,
-                    { method: 'GET', cache: 'default' }
+                    {
+                        method: 'GET', cache: 'default',
+                        headers: {
+                            'cors': 'same-origin',
+                            'X-App-Request': 'webflix-app',
+                            'Authorization': `Bearer ${process.env.API_SECRET_TOKEN}`
+                        }
+                    }
                 );
             } else if (tries % 3 == 1) {
                 response = await fetch(secondurl,
-                    { method: 'GET', cache: 'no-cache' }
+                    {
+                        method: 'GET', cache: 'no-cache', headers: {
+                            'cors': 'same-origin',
+                            'X-App-Request': 'webflix-app',
+                            'Authorization': `Bearer ${process.env.API_SECRET_TOKEN}`
+                        }
+                    }
                 );
             } else {
                 response = await fetch(thirdurl,
-                    { method: 'GET', cache: 'no-cache' }
+                    {
+                        method: 'GET', cache: 'no-cache', headers: {
+                            'cors': 'same-origin',
+                            'X-App-Request': 'webflix-app',
+                            'Authorization': `Bearer ${process.env.API_SECRET_TOKEN}`
+                        }
+                    }
                 );
             }
             tries--;
@@ -287,13 +320,21 @@ export async function GetMagnetLink(id: number, season?: number, episode?: numbe
     }
 }
 
-
 async function magnetLink(data: any, magnettries: number, signal: AbortSignal): Promise<{ magnet: string, status: number }> {
     try {
+        const cacheKey = generateHash(data.results[magnettries]); // Generate a hash for the torrent object
+        if (magnetCache.has(cacheKey)) {
+            console.log(`Cache hit for magnet: ${cacheKey}`);
+            return magnetCache.get(cacheKey)!;
+        }
+
         const magnetResponse = await fetch(`${process.env.BASE_URL}/api/torrents`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'cors': 'same-origin',
+                'X-App-Request': 'webflix-app',
+                'Authorization': `Bearer ${process.env.API_SECRET_TOKEN}`
             },
             body: JSON.stringify({ torrent: data.results[magnettries] }),
             signal
@@ -305,12 +346,23 @@ async function magnetLink(data: any, magnettries: number, signal: AbortSignal): 
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
+                    'cors': 'same-origin',
+                    'X-App-Request': 'webflix-app',
+                    'Authorization': `Bearer ${process.env.API_SECRET_TOKEN}`
                 },
                 signal
             });
 
             if (streamResponse && streamResponse.status == 200) {
-                return { magnet: magnetData.magnet, status: streamResponse.status };
+                // Cache the result
+                const result = { magnet: magnetData.magnet, status: streamResponse.status };
+                magnetCache.set(cacheKey, result);
+                setTimeout(() => {
+                    magnetCache.delete(cacheKey);
+                    console.log(`Cache expired for magnet: ${cacheKey}`);
+                }, CACHE_TTL);
+                console.log(`Cache set for magnet: ${cacheKey}`);
+                return result;
             }
             return { magnet: '', status: 404 };
         }
