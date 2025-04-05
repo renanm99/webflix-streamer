@@ -1,0 +1,47 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Build
+      run: npm run build
+    
+    - name: Deploy to homeserver
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 22
+        script: |
+          cd ${{ secrets.SERVER_DEPLOY_PATH }}
+          git pull
+          npm ci
+          npm run build
+          
+          # Restart the service (adjust based on how your app is running)
+          # If using PM2
+          pm2 restart webflix-streamer
+          
+          # If using systemd
+          # sudo systemctl restart webflix-streamer.service
