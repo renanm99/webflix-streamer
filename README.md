@@ -1,6 +1,6 @@
 # WebFlix Streamer
 
-A web-based streaming application built with Next.js that allows users to browse and stream movies and TV shows using WebTorrent technology.
+A web-based streaming application built with Next.js that allows users to browse and stream movies and TV shows using WebTorrent technology.*
 
 ## Features
 
