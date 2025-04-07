@@ -97,7 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           destroyStoreOnDestroy: true,
           strategy: 'sequential',
         },
-        (torrent) => {
+        (torrent: Torrent) => {
           clearTimeout(timeoutId);
           resolve(torrent);
         }

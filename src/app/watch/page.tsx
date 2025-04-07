@@ -8,8 +8,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
-import Loading from '../components/loading'
-import { time } from 'console'
+import Loading from '../components/loading';
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
@@ -24,18 +23,25 @@ function WatchPageContent() {
     const playerRef = useRef<HTMLDivElement>(null);
     const EpisodesRef = useRef<HTMLDivElement>(null);
 
-    // Fetch the movie/show data
     useEffect(() => {
         const fetchMovie = async () => {
             try {
                 const contentType = searchParams?.get('content')?.toString();
                 const id = parseInt(searchParams?.get('id') || '', 10);
-                if (contentType == 'movie') {
-                    setContent(await GetMovieById(id))
-                    setcontentMagnetLink(await GetMagnetLink(id))
+                if (contentType === 'movie') {
+                    const movie = await GetMovieById(id);
+                    const magnetLink = await GetMagnetLink(id);
+                    if (movie.id !== content.id) {
+                        setContent(movie);
+                    }
+                    if (magnetLink !== contentMagnetLink) {
+                        setcontentMagnetLink(magnetLink);
+                    }
                 } else {
-                    setContent(await GetTVById(id))
-                    //setContentEpisodes(await GetTVSeasonsDetailsById(id, 1))
+                    const tvShow = await GetTVById(id);
+                    if (tvShow.id !== content.id) {
+                        setContent(tvShow);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching content:', error);
@@ -51,28 +57,30 @@ function WatchPageContent() {
         if (contentEpisodes.id) {
             setIsLoadingEpisodes(false);
         }
-
     }, [content, contentEpisodes]);
 
     useEffect(() => {
         const fetchMagnetLink = async () => {
             try {
                 const contentType = searchParams?.get('content')?.toString();
-                if (contentType == 'tv' && content.id && (selectedSeason > 0)) {
-                    setContentEpisodes(await GetTVSeasonsDetailsById(content.id, selectedSeason))
+                if (contentType === 'tv' && content.id && selectedSeason > 0) {
+                    const episodes = await GetTVSeasonsDetailsById(content.id, selectedSeason);
+                    if (episodes.id !== contentEpisodes.id) {
+                        setContentEpisodes(episodes);
+                    }
                     if (selectedSeason > 0 && selectedEpisode > 0) {
-                        const magnetlink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode)
-                        if (magnetlink != '') {
-                            setcontentMagnetLink(magnetlink);
+                        const magnetLink = await GetMagnetLink(content.id, selectedSeason, selectedEpisode);
+                        if (magnetLink !== contentMagnetLink) {
+                            setcontentMagnetLink(magnetLink);
                         }
                     }
                 }
             } catch (error) {
-                console.error('Error fetching content:', error);
+                console.error('Error fetching magnet link:', error);
             }
-        }
+        };
 
-        fetchMagnetLink()
+        fetchMagnetLink();
     }, [selectedSeason, selectedEpisode, content]);
 
     if (isLoading) {

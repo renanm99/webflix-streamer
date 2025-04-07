@@ -30,6 +30,7 @@
     "postcss": "8.4.23",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "srt-support-for-html5-videos": "^2.6.11",
     "tailwindcss": "3.3.1",
     "torrent-search-api": "^2.1.4",
     "typescript": "5.0.4",
