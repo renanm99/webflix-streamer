@@ -6,9 +6,18 @@ import { transformSrtTracks } from 'srt-support-for-html5-videos';
 
 interface PlayerProps {
   magnetTorrent: string;
+  name: string;
+  year: string;
+  season: number;
+  episode: number;
 }
 
-const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
+interface Subtitle {
+  language: string;
+  content: string
+}
+
+const Player: React.FC<PlayerProps> = ({ magnetTorrent, name, year, season, episode }) => {
   const streamUrl = '/api/stream/' + magnetTorrent;
   const [isLoading, setIsLoading] = useState(true);
   const [loadingState, setLoadingState] = useState('Loading stream...');
@@ -41,7 +50,7 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
       }
     };
 
-    fetchSubtitles(video);
+    fetchSubtitles(video)
 
     video.src = streamUrl;
     video.addEventListener('canplay', eventHandler);
@@ -50,7 +59,7 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
     video.muted = true;
     video.playsInline = true;
 
-    //transformSrtTracks(video);
+    transformSrtTracks(video);
 
     video.addEventListener('waiting', () => setIsLoading(true));
     video.addEventListener('playing', () => setIsLoading(false));
@@ -64,26 +73,38 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
 
   const fetchSubtitles = async (video: HTMLVideoElement) => {
     try {
-      const response = await fetch('/api/subtitles');
-      if (!response.ok) {
-        throw new Error('Failed to fetch subtitles');
+
+      const queryParams = new URLSearchParams({
+        name: name,
+        year: year,
+        season: season.toString(),
+        episode: episode.toString(),
+      });
+
+      const response = await fetch(`/api/subtitles?${queryParams}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.status === 204) {
+        return
       }
 
       const subtitles = await response.json();
 
-      const existingTracks = video.querySelectorAll('track');
+      console.log('Subtitles:', subtitles);
 
-      if (existingTracks.length == 0) {
-        subtitles.forEach((subtitle: { lang: string; content: string }) => {
+      if (subtitles && subtitles.length > 0) {
+        subtitles.forEach((subtitle: { language: string; content: string }) => {
           const blob = new Blob([subtitle.content], { type: 'text/srt' });
           const blobUrl = URL.createObjectURL(blob);
 
           const track = document.createElement('track');
           track.src = blobUrl;
-          track.label = subtitle.lang === 'en' ? 'English' : 'Portuguese';
+          track.label = subtitle.language;
           track.kind = 'subtitles';
-          track.srclang = subtitle.lang;
+          track.srclang = subtitle.language;
 
+          console.log('subtitle added:', subtitle);
           video.appendChild(track);
 
           // Clean up the blob URL after use
@@ -118,7 +139,7 @@ const Player: React.FC<PlayerProps> = ({ magnetTorrent }) => {
           autoPlay={true}
           muted
           playsInline
-          className={`w-full h-full border border-gray-800 rounded-lg bg-black ${isLoading ? 'hidden' : 'block'
+          className={`w-full h-full rounded-lg bg-black ${isLoading ? 'hidden' : 'block'
             }`}
           onCanPlay={(e) => {
             e.currentTarget

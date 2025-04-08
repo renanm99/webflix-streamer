@@ -40,6 +40,7 @@
     "src/app/watch/page copy.tsx.old",
     "src/app/watch/page copy 2.tsx.old",
     "src/app/tvdetails/page.tsx.old",
+    "src/libs/addic7ed.ts",
   ],
   "exclude": [
     "node_modules",

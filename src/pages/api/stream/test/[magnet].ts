@@ -34,7 +34,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const torrentPromise = new Promise<Torrent>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         reject('Torrent initialization timed out');
-      }, 15 * 1000); // 30 second timeout
+      }, 10 * 1000); // 30 second timeout
 
       client.add(
         torrentId,

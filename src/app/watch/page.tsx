@@ -30,10 +30,10 @@ function WatchPageContent() {
                 const id = parseInt(searchParams?.get('id') || '', 10);
                 if (contentType === 'movie') {
                     const movie = await GetMovieById(id);
-                    const magnetLink = await GetMagnetLink(id);
                     if (movie.id !== content.id) {
                         setContent(movie);
                     }
+                    const magnetLink = await GetMagnetLink(id);
                     if (magnetLink !== contentMagnetLink) {
                         setcontentMagnetLink(magnetLink);
                     }
@@ -128,10 +128,10 @@ function WatchPageContent() {
         }, 200)
     };
 
-    const handleSeasonClick = (seasonNumber: number) => {
-        setIsLoadingEpisodes(true)
+    const handleSeasonClick = async (seasonNumber: number) => {
         setSelectedSeason(seasonNumber);
         setSelectedEpisode(0);
+        setIsLoadingEpisodes(true);
         scrollToEpisodes();
     }
 
@@ -383,7 +383,7 @@ function WatchPageContent() {
                                     <Loading text="Fetching content..." />
                                 ) : (
                                     <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                                        <Player magnetTorrent={contentMagnetLink} />
+                                        <Player magnetTorrent={contentMagnetLink} name={'title' in content ? content.title : content.name} year={'title' in content ? content.release_date.substring(0, 4) : '0'} season={!('title' in content) ? selectedSeason : 0} episode={!('title' in content) ? selectedEpisode : 0} />
                                     </div>
                                 )}
                             </div>
