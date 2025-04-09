@@ -1,8 +1,8 @@
 'use server'
 import client from '@/libs/webtorret'
 import { NextApiRequest, NextApiResponse } from 'next'
-import type { Torrent } from 'webtorrent'
-import { isMediaFile, mediaType, torrentIdFromQuery } from '@/utils/helpers'
+import { Torrent } from 'webtorrent'
+import { torrentIdFromQuery } from '@/utils/helpers'
 
 export const config = {
   api: {
@@ -42,7 +42,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           destroyStoreOnDestroy: true,
           strategy: 'sequential',
         },
-        (torrent) => {
+        (torrent: Torrent) => {
           clearTimeout(timeoutId);
           resolve(torrent);
         }
