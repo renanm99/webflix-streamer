@@ -34,9 +34,9 @@ jobs:
       run: |
         mkdir -p ~/.ssh/ && touch ~/.ssh/known_hosts
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/webflix_deploy_key
-        chmod 600 ~/.ssh/known_hosts
         chmod 600 ~/.ssh/webflix_deploy_key
-        ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
+        eval "$(ssh-agent -s)" # Start the SSH agent
+        ssh-add ~/.ssh/webflix_deploy_key
 
     - name: Configure SSH for cloudflared
       run: |
