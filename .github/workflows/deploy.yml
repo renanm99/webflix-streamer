@@ -46,6 +46,11 @@ jobs:
           IdentityFile ~/.ssh/webflix_deploy_key
         " >> ~/.ssh/config
 
+    - name: Add SSH host key
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+
     - name: Deploy to homeserver
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       env:
