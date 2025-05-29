@@ -36,7 +36,6 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/webflix_deploy_key
         chmod 600 ~/.ssh/known_hosts
         chmod 600 ~/.ssh/webflix_deploy_key
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts || { echo "ssh-keyscan failed ${{ secrets.SSH_HOST }}"; exit 1; }
         ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
 
     - name: Configure SSH for cloudflared
