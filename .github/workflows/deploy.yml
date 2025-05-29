@@ -54,7 +54,7 @@ jobs:
       env:
         DEPLOY_PATH: ${{ secrets.SERVER_DEPLOY_PATH }}
       run: |
-        ssh -i ~/.ssh/webflix_deploy_key -o UserKnowHostsFile=~/.ssh/known_hosts myhost "
+        ssh -i ~/.ssh/webflix_deploy_key -o UserKnownHostsFile=~/.ssh/known_hosts myhost "
           cd $DEPLOY_PATH
           git pull
           npm ci
