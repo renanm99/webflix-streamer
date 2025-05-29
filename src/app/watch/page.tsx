@@ -9,6 +9,7 @@ import Image from 'next/image'
 import { GetMovieById, GetTVById, GetTVSeasonsDetailsById, GetMagnetLink } from "@/../repo/tmdbApi";
 import { MovieById, TVById, TVSeasonDetails } from "@/../repo/models/movie";
 import Loading from '../components/loading';
+import Router from 'next/router';
 
 function WatchPageContent() {
     const searchParams = useSearchParams();
@@ -22,6 +23,16 @@ function WatchPageContent() {
     const [isLoadingEpisodes, setIsLoadingEpisodes] = useState(true);
     const playerRef = useRef<HTMLDivElement>(null);
     const EpisodesRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      const handleBeforeUnload = (event: any) => {
+        setcontentMagnetLink("")
+      };
+      window.addEventListener('beforeunload', handleBeforeUnload);
+      return () => {
+        window.removeEventListener('beforeunload', handleBeforeUnload);
+      };
+    }, []); 
 
     useEffect(() => {
         const fetchMovie = async () => {
@@ -83,9 +94,11 @@ function WatchPageContent() {
         fetchMagnetLink();
     }, [selectedSeason, selectedEpisode, content]);
 
+
+
     if (isLoading) {
         return (
-            <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white flex items-center justify-center">
+            <div className="">
                 <div className="text-center">
                     <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
                     <p className="text-xl">Loading content...</p>
@@ -130,8 +143,8 @@ function WatchPageContent() {
 
     const handleSeasonClick = async (seasonNumber: number) => {
         setSelectedSeason(seasonNumber);
-        setSelectedEpisode(0);
         setIsLoadingEpisodes(true);
+        setSelectedEpisode(0);
         scrollToEpisodes();
     }
 
@@ -140,6 +153,10 @@ function WatchPageContent() {
         setSelectedEpisode(episode_number);
         scrollToPlayer();
     }
+
+
+
+
 
     return (
 
@@ -339,59 +356,63 @@ function WatchPageContent() {
 
                 {/* Episodes */}
                 <div ref={EpisodesRef} className="h-1"></div>
+                {isLoadingEpisodes && selectedSeason > 0 && (<Loading text='Loading Season...' />)}
                 {!('title' in content) && contentEpisodes.episodes && contentEpisodes.episodes.length > 0 && (
                     <div className="mb-8">
-                        <h2 className="text-2xl font-semibold mb-4">Episodes</h2>
-                        {isLoadingEpisodes ? (<Loading text='Loading Season...' />) :
-                            (<div className="flex flex-col gap-6">
-                                {contentEpisodes.episodes.map((episode) => (
-                                    <button
-                                        key={episode.id}
-                                        onClick={() => handleEpisodeClick(episode.episode_number)}
-                                        className={`flex items-start gap-4 text-left ${episode.episode_number === selectedEpisode
-                                            ? 'bg-gray-700/50 border-l-4 border-blue-500'
-                                            : 'bg-gray-800/10'
-                                            } hover:bg-gray-700/30 p-4 rounded-lg transition-colors`}
-                                    >
-                                        <Image
-                                            src={episode.still_path ? `${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${episode.still_path}` : '/notfound.png'}
-                                            alt={episode.name}
-                                            width={150}
-                                            height={100}
-                                            className="rounded-md shadow-md"
-                                            loading="lazy"
-                                            onError={(e) => (e.currentTarget.src = '/notfound.png')}
-                                        />
-                                        <div>
-                                            <h3 className="text-lg font-bold">{episode.name}</h3>
-                                            <p className="text-gray-400 text-sm">Date: {episode.air_date}</p>
-                                            <p className="text-gray-300">{episode.overview}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>)}
+                        <h2 className="text-2xl font-semibold mb-4">Episodes</h2><div className="flex flex-col gap-6">
+                            {contentEpisodes.episodes.map((episode) => (
+                                <button
+                                    key={episode.id}
+                                    onClick={() => handleEpisodeClick(episode.episode_number)}
+                                    className={`flex items-start gap-4 text-left ${episode.episode_number === selectedEpisode
+                                        ? 'bg-gray-700/50 border-l-4 border-blue-500'
+                                        : 'bg-gray-800/10'
+                                        } hover:bg-gray-700/30 p-4 rounded-lg transition-colors`}
+                                >
+                                    <Image
+                                        src={episode.still_path ? `${process.env.NEXT_PUBLIC_TMDB_POSTER_URL}${episode.still_path}` : '/notfound.png'}
+                                        alt={episode.name}
+                                        width={150}
+                                        height={100}
+                                        className="rounded-md shadow-md"
+                                        loading="lazy"
+                                        onError={(e) => (e.currentTarget.src = '/notfound.png')}
+                                    />
+                                    <div>
+                                        <h3 className="text-lg font-bold">{episode.name}</h3>
+                                        <p className="text-gray-400 text-sm">Date: {episode.air_date}</p>
+                                        <p className="text-gray-300">{episode.overview}</p>
+                                    </div>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
 
-                <div className="mb-10 w-full h-full">
+                <div className="mb-10 w-full">
                     {(!('title' in content) && selectedEpisode == 0) ? <></> : (('title' in content && new Date(content.release_date) <= new Date()) ||
                         (!('title' in content) && new Date(content.first_air_date) <= new Date())) && (
-                            <div className="w-full h-full">
+                            <div className="w-full">
                                 <h2 className="text-2xl font-semibold mb-4">Watch Now</h2>
+                                <div className="relative w-full overflow-hidden rounded-xl shadow-2xl bg-black mx-auto" style={{ paddingBottom: '46.25%' }}>
+                                    {contentMagnetLink === '' ? (
+                                        <div className='absolute top-0 left-0 w-full h-full flex items-center justify-center'>
+                                            <Loading text="Fetching content..." />
+                                        </div>
+                                    ) : (
+                                        <div className="absolute top-0 left-0 w-full h-full">
+                                            <Player magnetTorrent={contentMagnetLink} tmdb_id={content.id} season={!('title' in content) ? selectedSeason : 0} episode={!('title' in content) ? selectedEpisode : 0} />
+                                        </div>
 
-                                {contentMagnetLink === '' ? (
-                                    <Loading text="Fetching content..." />
-                                ) : (
-                                    <div className="rounded-xl overflow-hidden shadow-2xl bg-black mx-auto">
-                                        <Player magnetTorrent={contentMagnetLink} name={'title' in content ? content.title : content.name} year={'title' in content ? content.release_date.substring(0, 4) : '0'} season={!('title' in content) ? selectedSeason : 0} episode={!('title' in content) ? selectedEpisode : 0} />
-                                    </div>
-                                )}
+                                    )}
+                                </div>
                             </div>
                         )}
                 </div>
 
                 <Footer />
                 <div ref={playerRef} className="h-1" />
+
             </main >
         </div >
     );

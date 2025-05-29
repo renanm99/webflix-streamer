@@ -10,60 +10,66 @@ export const config = {
   }
 }
 
-client.setMaxListeners(1000)
-
 const CHUNK_SIZE = 10 ** 6 // 1MB
 
 
 
 const streamTorrent = (torrent: Torrent, req: NextApiRequest, res: NextApiResponse) => {
-
-  const file = torrent?.files?.find((file) => isMediaFile(file?.name))
+  const file = torrent?.files?.find((file) => isMediaFile(file?.name));
   if (!file) {
-    /*
-      torrent.destroy()
-      torrent.files.forEach((file) => {
-        fs.unlinkSync(file.path)
-      })
-        */
-    return res.status(500).json({ error: 'No media file found' })
+    return res.status(500).json({ error: 'No media file found' });
   }
 
-  const fileSize = file.length
-  const range = req.headers.range
-  const contentType = mediaType(file.name)
+  const fileSize = file.length;
+  const range = req.headers.range;
+  const contentType = mediaType(file.name);
 
   if (range) {
-    const start = Number(range.replace(/\D/g, ''))
-    const end = Math.min(start + CHUNK_SIZE, fileSize - 1)
+    const start = Number(range.replace(/\D/g, ''));
+    const end = Math.min(start + CHUNK_SIZE, fileSize - 1);
 
     if (start >= fileSize || end >= fileSize) {
       res.writeHead(416, {
-        'Content-Range': `bytes */${fileSize} `
-      })
-      return res.end()
+        'Content-Range': `bytes */${fileSize}`,
+      });
+      return res.end();
     }
 
     res.writeHead(206, {
       'Content-Range': `bytes ${start}-${end}/${fileSize}`,
       'Accept-Ranges': 'bytes',
       'Content-Length': end - start + 1,
-      'Content-Type': contentType
-    })
+      'Content-Type': contentType,
+    });
 
-
+    // Stream the requested range of the file
     const readStream = file.createReadStream({ start, end });
-    readStream.pipe(res)
+
+    // Handle errors during streaming
+    readStream.on('error', (err) => {
+      console.error('Error streaming file:', err);
+      res.status(500).end('Error streaming file');
+    });
+
+    readStream.pipe(res);
   } else {
     res.writeHead(200, {
       'Content-Length': fileSize,
-      'Content-Type': contentType
-    })
+      'Content-Type': contentType,
+    });
 
+    // Stream the entire file
     const readStream = file.createReadStream();
-    readStream.pipe(res)
+
+    // Handle errors during streaming
+    readStream.on('error', (err) => {
+      console.error('Error streaming file:', err);
+      res.status(500).end('Error streaming file');
+    });
+
+    readStream.pipe(res);
   }
-}
+};
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.query.xt == 'urn:btih:0000000000000000000000000000000000000000') {

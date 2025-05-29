@@ -1,6 +1,7 @@
 import WebTorrent from 'webtorrent'
+import { EventEmitter } from 'stream'
 
-const client = new WebTorrent({ maxConns: 100, })
-client.setMaxListeners(1000)
+const client = new WebTorrent({ maxConns: 1000, })
+EventEmitter.setMaxListeners(1000)
 
-export default client
+export default client;
