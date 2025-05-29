@@ -62,5 +62,6 @@ jobs:
           git pull
           npm ci
           npm run build
+          export PATH=\$PATH:~/.nvm/versions/node/v22.13.1/bin
           pm2 restart webflix-streamer
         "
