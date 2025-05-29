@@ -43,6 +43,7 @@ jobs:
           HostName ${{ secrets.SSH_HOST }}
           User ${{ secrets.SSH_USERNAME }}
           ProxyCommand cloudflared access ssh --hostname %h
+          IdentityFile ~/.ssh/webflix_deploy_key
         " >> ~/.ssh/config
 
     - name: Deploy to homeserver
@@ -50,10 +51,10 @@ jobs:
       env:
         DEPLOY_PATH: ${{ secrets.SERVER_DEPLOY_PATH }}
       run: |
-        ssh -o StrictHostKeyChecking=no myhost "
+        ssh myhost "
           cd $DEPLOY_PATH
           git pull
           npm ci
           npm run build
-          pm2 restart webflix-streamer || sudo systemctl restart webflix-streamer.service
+          pm2 restart webflix-streamer
         "
