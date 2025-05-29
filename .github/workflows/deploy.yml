@@ -36,11 +36,10 @@ jobs:
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/webflix_deploy_key
         chmod 600 ~/.ssh/webflix_deploy_key
         eval "$(ssh-agent -s)" # Start the SSH agent
-        ssh-add ~/.ssh/webflix_deploy_key
 
     - name: Add SSH Host Key
       run: |
-        ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+        echo "${{ secrets.SSH_PUBLIC_KEY }}" >> ~/.ssh/known_hosts
 
     - name: Configure SSH for cloudflared
       run: |
