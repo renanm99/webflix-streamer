@@ -35,6 +35,7 @@ jobs:
         mkdir -p ~/.ssh
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/webflix_deploy_key
         chmod 600 ~/.ssh/webflix_deploy_key
+        sh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
     - name: Configure SSH for cloudflared
       run: |
@@ -45,10 +46,6 @@ jobs:
           ProxyCommand cloudflared access ssh --hostname %h
           IdentityFile ~/.ssh/webflix_deploy_key
         " >> ~/.ssh/config
-
-    - name: Add SSH host key
-      run: |
-        ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
     - name: Deploy to homeserver
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
