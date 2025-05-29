@@ -32,10 +32,12 @@ jobs:
 
     - name: Setup SSH key
       run: |
-        mkdir -p ~/.ssh
+        mkdir -p ~/.ssh/ && touch ~/.ssh/known_hosts
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/webflix_deploy_key
+        chmod 600 ~/.ssh/known_hosts
         chmod 600 ~/.ssh/webflix_deploy_key
         ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts || { echo "ssh-keyscan failed"; exit 1; }
+        ssh-add - <<< "${{ secrets.SSH_PRIVATE_KEY }}"
 
     - name: Configure SSH for cloudflared
       run: |
@@ -53,7 +55,7 @@ jobs:
       env:
         DEPLOY_PATH: ${{ secrets.SERVER_DEPLOY_PATH }}
       run: |
-        ssh myhost "
+        ssh -i ~/.ssh/webflix_deploy_key -o UserKnowHostsFile=~/.ssh/known_hosts myhost "
           cd $DEPLOY_PATH
           git pull
           npm ci
